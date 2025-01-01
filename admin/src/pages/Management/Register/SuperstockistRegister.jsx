@@ -11,8 +11,9 @@ import {
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { BASE_URL } from '../../../constants';
+import { IoMdClose } from 'react-icons/io';
 
-const SuperstockistRegister = ({onClose}) => {
+const SuperstockistRegister = ({onClose,selectSuperStockist}) => {
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -37,14 +38,24 @@ const SuperstockistRegister = ({onClose}) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate required fields
+    for (const key in formData) {
+      if (!formData[key]) {
+        toast.error(`${key} is required!`);
+        return;
+      }
+    }
+  
     try {
-      const response = await axios.post(
-        `${BASE_URL}/api/superstockist/register`,
-        formData
-      );
+      const response = selectSuperStockist ?
+        await axios.put(`${BASE_URL}/api/superstockist/${selectSuperStockist._id}`, formData) :
+        await axios.post(`${BASE_URL}/api/superstockist/register`, formData);
+  
       console.log('Response:', response.data);
-      toast.success('Superstockist registered successfully!');
-      // Clear form data after successful submission if needed
+      toast.success(selectSuperStockist ? 'Superstockist updated successfully!' : 'Superstockist registered successfully!');
+      
+      // Clear form data after successful submission
       setFormData({
         username: '',
         email: '',
@@ -59,26 +70,40 @@ const SuperstockistRegister = ({onClose}) => {
         wareHouseName: '',
       });
     } catch (error) {
-      toast.error('Error:', error);
-      console.error('Error:', error);
+      const errorMessage = error.response?.data?.message || error.message;
+      toast.error(errorMessage);
+      console.error('Error:', errorMessage);
     }
   };
-  const handleCancel = () => {
-    onClose(); // Close the modal when cancel button is clicked
-  };
+  
+
+  useEffect(() => {
+    if (selectSuperStockist) {
+      setFormData({
+        username: selectSuperStockist.username,
+        email: selectSuperStockist.email,
+        phoneNo: selectSuperStockist.phoneNo,
+        address: selectSuperStockist.address,
+        city: selectSuperStockist.city,
+        pinCode: selectSuperStockist.pinCode,
+        state: selectSuperStockist.state,
+         wareHouseName: selectSuperStockist.wareHouseName,
+      });
+    }
+  }, [selectSuperStockist]);
+
 
   return (
     <div className="h-full flex justify-center items-center">
       <ToastContainer />
       <Card color="transparent" shadow={false} className="w-full max-w-md p-2">
         <Typography variant="h4" className='text-[#1e40af]'>
-          Sign Up
+        {selectSuperStockist ? "Update super Stockist" : "Registration"}
         </Typography>
-        <Typography color="gray" className="mt-1 font-normal text-[#1e40af]">
-          Nice to meet you! Enter your details to register.
-        </Typography>
+        <IoMdClose onClick={onClose}  className="absolute top-4 right-3 cursor-pointer  text-2xl"/>
         <form onSubmit={handleSubmit} className="mt-8">
-          <div className="mb-6 flex flex-col gap-4">
+          <div className=" grid lg:grid-cols-2 grid-cols-1 gap-4 ">
+            <div>
             <Input
               size="lg"
               placeholder="Your Name"
@@ -86,6 +111,7 @@ const SuperstockistRegister = ({onClose}) => {
               value={formData.username}
               onChange={handleChange}
             />
+            </div>
             <Input
               size="lg"
               placeholder="Your Email"
@@ -155,17 +181,11 @@ const SuperstockistRegister = ({onClose}) => {
             />
           </div>
           <Button type="submit" className="mt-4 bg-[#1e40af]" fullWidth>
-            Sign Up
+            {selectSuperStockist? "Update" : "submit"}
           </Button>
           
         </form>
-        <Button
-          color="red"
-          className="w-24 ml-auto mt-4"
-          onClick={handleCancel}
-        >
-          Cancel
-        </Button>
+        
       </Card>
     </div>
   );

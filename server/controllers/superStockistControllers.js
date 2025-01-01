@@ -1,6 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const SuperStockistRegistered = require("../models/superStockistModel");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const expressAsyncHandler = require("express-async-handler");
 const mongoose = require("mongoose");
@@ -27,6 +27,7 @@ const registerUser = asyncHandler(async (req, resp) => {
     address,
     pinCode,
     wareHouseName,
+    phoneNo,
   } = req.body;
   if (password !== confirmPassword) {
     resp.status(400);
@@ -80,6 +81,7 @@ const registerUser = asyncHandler(async (req, resp) => {
     address,
     pinCode,
     wareHouseName,
+    phoneNo,
   });
   console.log(`Executive User created ${superStockistRegistered}`);
   if (superStockistRegistered) {
@@ -198,20 +200,124 @@ const updatePassword = expressAsyncHandler(async (req, res) => {
 const currentUser = asyncHandler(async (req, res) => {
   // Check if userExecutive exists on the request object
   if (req.userExecutive) {
-      res.json({ 
-          message: "superStockistRegistered current user information", 
-          user: req.userExecutive // Send the userExecutive data
-      });
+    res.json({
+      message: "superStockistRegistered current user information",
+      user: req.userExecutive, // Send the userExecutive data
+    });
   } else {
-      res.status(400);
-      throw new Error("User information not found");
+    res.status(400);
+    throw new Error("User information not found");
   }
 });
-
 
 const GetAllUser = asyncHandler(async (req, resp) => {
   const getAllUser = await SuperStockistRegistered.find();
   resp.status(200).json(getAllUser);
+});
+
+// @desc Delete a user
+//@route DELETE /api/users/:id
+//@access private (can be modified based on your access control)
+
+const deleteUser = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  // Check if the user ID is valid
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    res.status(400).json({ message: "Invalid user ID!" });
+    return;
+  }
+
+  // Find the user by ID
+  const superStockistRegistered = await SuperStockistRegistered.findById(id);
+
+  if (!superStockistRegistered) {
+    res.status(404).json({ message: "User not found!" });
+    return;
+  }
+
+  // Delete the user from the database
+  await superStockistRegistered.remove();
+
+  res.status(200).json({ message: "User deleted successfully!" });
+});
+
+// @desc Update a user's information
+//@route PUT /api/users/:id
+//@access private
+
+const updateUser = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const {
+    username,
+    email,
+    country,
+    state,
+    city,
+    address,
+    pinCode,
+    wareHouseName,
+    phoneNo,
+  } = req.body;
+
+  // Check if the ID is valid
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: "Invalid user ID!" });
+  }
+
+  // Find the user by ID
+  const superStockistRegistered = await SuperStockistRegistered.findById(id);
+
+  if (!superStockistRegistered) {
+    return res.status(404).json({ message: "User not found!" });
+  }
+
+  // Update the user fields
+  superStockistRegistered.username =
+    username || superStockistRegistered.username;
+  superStockistRegistered.email = email || superStockistRegistered.email;
+  superStockistRegistered.country = country || superStockistRegistered.country;
+  superStockistRegistered.state = state || superStockistRegistered.state;
+  superStockistRegistered.city = city || superStockistRegistered.city;
+  superStockistRegistered.address = address || superStockistRegistered.address;
+  superStockistRegistered.pinCode = pinCode || superStockistRegistered.pinCode;
+  superStockistRegistered.wareHouseName =
+    wareHouseName || superStockistRegistered.wareHouseName;
+  superStockistRegistered.phoneNo = phoneNo || superStockistRegistered.phoneNo;
+
+  try {
+    // Save the updated user details, wait for it to complete
+    const updatedUser = await superStockistRegistered.save();
+
+    // Only respond once the operation completes successfully
+    return res
+      .status(200)
+      .json({ message: "User updated successfully!", user: updatedUser });
+  } catch (error) {
+    // Handle any potential errors that arise during save
+    console.error("Error saving user:", error);
+    return res
+      .status(500)
+      .json({ message: "Failed to update user", error: error.message });
+  }
+});
+
+const getUserByEmail = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  // Normalize email (optional, for case insensitivity)
+  const normalizedEmail = email.toLowerCase();
+
+  const user = await SuperStockistRegistered.findOne({
+    email: normalizedEmail,
+  });
+
+  if (!user) {
+    res.status(404).json({ message: "User not found!" });
+    return;
+  }
+
+  res.status(200).json(user);
 });
 
 module.exports = {
@@ -220,4 +326,7 @@ module.exports = {
   currentUser,
   GetAllUser,
   updatePassword,
+  deleteUser,
+  updateUser,
+  getUserByEmail,
 };

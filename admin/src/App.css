@@ -115,3 +115,22 @@
   background-color: #39c276;
 }
 
+
+
+
+
+/* Success Button */
+.custom-ok-button {
+  background-color: #4caf50 !important; /* Green */
+  color: white !important;
+  border: none !important;
+  border-radius: 5px !important;
+}
+
+/* Error Button */
+.custom-error-button {
+  background-color: #f44336 !important; /* Red */
+  color: white !important;
+  border: none !important;
+  border-radius: 5px !important;
+}

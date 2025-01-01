@@ -92,6 +92,8 @@ const Login = ({ state, routesName }) => {
               <span className="letter">i</span>
               <span className="letter">n</span>
               <span className="letter">/</span>
+      
+
               <span className="letter">S</span>
               <span className="letter">t</span>
               <span className="letter">o</span>
@@ -143,7 +145,7 @@ const Login = ({ state, routesName }) => {
     text-blue-500 flex justify-between items-center hover:bg-blue-200 hover:text-black border border-black 
     shadow-lg hover:shadow-xl transition duration-300 ease-in-out transform hover:-translate-y-1 focus:outline-none focus:ring-4 focus:ring-blue-400">
                 <Link to={`/superstockistLogin/${routesName}`} className="w-full text-center">
-                  SuperStockist Login
+                  Super Stockist Login
                 </Link>
                 <span className="ml-2 bg-blue-500 p-2 rounded-full">
                   <FiLogIn className="text-white" />

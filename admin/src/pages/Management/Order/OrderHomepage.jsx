@@ -6,9 +6,12 @@ import ManagementSidebar from "../ManagementSidebar";
 import ManagementSideBarModal from "../ManagementChart/ManagementSideBarModal";
 import { BASE_URL } from "../../../constants";
 import Swal from "sweetalert2"; // Import SweetAlert2
-import { Link } from "react-router-dom";
+import { useNavigate,Link } from 'react-router-dom';
 import Img from "../../../assets/avataaars.png";
 import { Avatar } from "@material-tailwind/react";
+import { format, parse } from 'date-fns';
+
+
 
 function DeliveryBoyHomePage() {
   const [orders, setOrders] = useState([]);
@@ -18,6 +21,7 @@ function DeliveryBoyHomePage() {
   const [searchQuery, setSearchQuery] = useState(""); // State for search query
   const [currentPage, setCurrentPage] = useState(1); // Pagination state
   const itemsPerPage = 5; // Number of items per page
+  const navigate  = useNavigate()
 
   // Fetch orders from API on component mount
   useEffect(() => {
@@ -94,9 +98,11 @@ function DeliveryBoyHomePage() {
 
     if (result.isConfirmed) {
       try {
-        await axios.patch(`${BASE_URL}/api/panshop/order/cancel/${orderId}`);
+        // PATCH request to cancel the order
+        await axios.put(`${BASE_URL}/api/panshop/order/cancel/${orderId}`);
         Swal.fire("Canceled!", "Your order has been canceled.", "success");
-        // Optionally refetch the orders after cancellation
+
+        // Refetch the orders after cancellation
         const response = await axios.get(`${BASE_URL}/api/panshop/order`);
         setOrders(response.data);
       } catch (error) {
@@ -109,6 +115,12 @@ function DeliveryBoyHomePage() {
       }
     }
   };
+
+  const handleOnclick = ( order) => {
+                          
+    navigate("/trackerOrder/management", { state: { order } });
+  }
+
 
   return (
     <div className="  bg-[#DBEAFE] min-h-screen py-10">
@@ -139,17 +151,16 @@ function DeliveryBoyHomePage() {
               "pending",
               "processing",
               "confirmed",
-              "shipped",
+
               "delivered",
               "canceled",
             ].map((status) => (
               <Button
                 key={status}
-                className={`mr-2 ${
-                  activeTab === status
-                    ? "bg-blue-600 text-white shadow-lg"
-                    : "bg-gray-300 text-gray-800 hover:bg-blue-400"
-                }`}
+                className={`mr-2 ${activeTab === status
+                  ? "bg-blue-600 text-white shadow-lg"
+                  : "bg-gray-300 text-gray-800 hover:bg-blue-400"
+                  }`}
                 onClick={() => setActiveTab(status)}
               >
                 {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -174,24 +185,19 @@ function DeliveryBoyHomePage() {
               <thead>
                 <tr className="bg-[#6daef8] text-white">
                   <th className="border px-4 py-2">PanShop Details</th>
-                  {activeTab != "pending" && (
+                  {activeTab !== "pending" && activeTab !== "canceled" && (
                     <>
                       <th className="border px-4 py-2">Assign to Stockist</th>
-                      <th className="border px-4 py-2">
-                        Assign to Super Stockist
-                      </th>
+                      <th className="border px-4 py-2">Assign to Super Stockist</th>
                     </>
                   )}
-                  {!(activeTab === "processing" || activeTab === "pending") && (
-                    <th className="border px-4 py-2">
-                      Assigned to DeliveryBoy
-                    </th>
-                  )}
 
+                  
                   <th className="border px-4 py-2">Products</th>
-                  <th className="border px-4 py-2">Total Price</th>
                   <th className="border px-4 py-2">Status</th>
-                  <th className="border px-4 py-2">Actions</th>
+                  {activeTab !== "delivered" && activeTab !== "canceled" && (
+                    <th className="border px-4 py-2">Actions</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -199,9 +205,8 @@ function DeliveryBoyHomePage() {
                   currentOrders.map((order, index) => (
                     <tr
                       key={order._id}
-                      className={`hover:bg-gray-100 ${
-                        index % 2 === 0 ? "bg-gray-50" : "bg-white"
-                      }`}
+                      className={`hover:bg-gray-100 ${index % 2 === 0 ? "bg-gray-50" : "bg-white"
+                        }`}
                     >
                       <td className="border px-4 py-2 text-center">
                         {order?.panShopOwnerName} <br />
@@ -215,67 +220,93 @@ function DeliveryBoyHomePage() {
                             Show Details
                           </Link>
                         </div>
+                        <div className="mt-2 text-sm text-gray-500">
+                          Order Created At: {format(new Date(order?.createdAt), 'MMM d, yyyy h:mm a')}
+                        </div>
                       </td>
-                      {order.status !== "pending" && (
+                      {activeTab !== "pending" && activeTab !== "canceled" && (
                         <>
-                          <td className="border px-4 py-2">
-                            {order.stockistEmail}
-                            <div className="flex justify-center items-center content-center">
-                              <br />
-                              <Link
-                                to="/stockistDetails"
-                                className="text-green-600"
-                              >
-                                Show Details
-                              </Link>
-                            </div>
-                          </td>
-                          <td className="border px-4 py-2">
-                            {order.superStockistEmail}
-                            <div className="flex justify-center items-center content-center">
-                              <br />
-                              <Link
-                                to="/stockistDetails"
-                                className="text-green-600"
-                              >
-                                Show Details
-                              </Link>
-                            </div>
-                          </td>
-                        </>
-                      )}
-                      {!(
-                        activeTab === "processing" || activeTab === "pending"
-                      ) &&
-                        order.deliveryBoyId && (
-                          <td className="border px-4 py-2 text-center">
-                            {order.deliveryBoyId?.username}
-                            <br />
-                            {order.deliveryBoyId?.email}
+                          <td className=" border px-4 py-2 flex-row justify-center items-center">
+                            <p>{order.stockistEmail}</p>
 
-                            <br />
+                            <p
+                              className={` ${order.stockistStatus === "pending"
+                                ? "text-yellow-500"
+
+                                : order.stockistStatus === "delivered"
+                                  ? "text-purple-500"
+                                  : order.stockistStatus === "canceled"
+                                    ? "text-red-500"
+                                    : ""
+                                }`}
+                            >
+                              {order.stockistStatus}
+                            </p>
+
+                            <Link to="/stockistDetails" className="text-green-600">
+                              Show Details
+                            </Link>
+                          </td>
+
+                          <td className="border px-4 py-2 flex-row justify-center items-center">
+                            {order.superStockistEmail}
+
+
+                            <p
+                              className={` ${order.superStockistStatus === "pending"
+                                ? "text-yellow-500"
+                                : order.superStockistStatus === "delivered"
+                                  ? "text-purple-500"
+                                  : order.superStockistStatus === "canceled"
+                                    ? "text-red-500"
+                                    : ""
+                                }`}
+                            >{order.superStockistStatus}</p>
+
                             <Link
-                              to={`/DeliveryboyDetails/${order.deliveryBoyId._id}/management`}
+                              to="/stockistDetails"
                               className="text-green-600"
                             >
                               Show Details
                             </Link>
+
                           </td>
-                        )}
+                        </>
+                      )}
+                     
 
                       <td className="border px-4 py-2">
                         <ul className="space-y-1">
                           {order.products.map((product, index) => (
                             <li key={index} className="flex justify-between">
-                              <span>{product.productNames}</span>
+                              <span>{product.productName}</span>
+                              <br />
                               <span>Qty: {product.quantity}</span>
-                              <span>₹{product.price}</span>
+
                             </li>
                           ))}
+                          <p className="text-center"><span className="text-xl font-medium">Total Price :</span> ₹{order.totalPrice}</p>
                         </ul>
+
                       </td>
-                      <td className="border px-4 py-2">₹ {order.totalPrice}</td>
-                      <td className="border px-4 py-2">{order.status}</td>
+
+                      <td
+                        className={`border px-4 py-2 ${order.status === "pending"
+                          ? "text-yellow-500"
+                          : order.status === "processing"
+                            ? "text-blue-500"
+                            : order.status === "confirmed"
+                              ? "text-green-500"
+                              : order.status === "delivered"
+                                ? "text-purple-500"
+                                : order.status === "canceled"
+                                  ? "text-red-500"
+                                  : ""
+                          }`}
+                      >
+                        {order.status}
+                      </td>
+
                       <td className="border px-4 py-2 ">
                         <div className="flex justify-center items-center content-center gap-4 flex-wrap">
                           {order.status === "pending" && (
@@ -286,12 +317,23 @@ function DeliveryBoyHomePage() {
                               Assign
                             </Button>
                           )}
-                          <Button
-                            className="bg-red-600 text-white shadow hover:bg-red-500"
-                            onClick={() => handleCancelOrder(order._id)}
-                          >
-                            Cancel
-                          </Button>
+                          { activeTab !== "canceled" && activeTab !== "delivered" &&  (
+                            <Button
+                              className="bg-red-600 text-white shadow hover:bg-red-500"
+                              onClick={() => handleCancelOrder(order._id)}
+                            >
+                              Cancel
+                            </Button>
+                          )}
+
+
+                            <Button  
+                              className="bg-green-600 text-white shadow hover:bg-green-500"
+                              onClick={() => handleOnclick(order)}
+                            >
+                              Track Order
+                            </Button>
+                  
                         </div>
                       </td>
                     </tr>
@@ -341,7 +383,7 @@ function DeliveryBoyHomePage() {
           </Button>
         </div>
       </div>
-    </div>
+    </div >
   );
 }
 

@@ -10,14 +10,17 @@ const OverdueOrders = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [otp, setOtp] = useState("");
   const inputRefs = useRef([]);
-  const deliveryEmail = localStorage.getItem("email");
+  // const deliveryEmail = localStorage.getItem("email");
+  const id = localStorage.getItem("CurrentUserId");
 
-  const API_URL= process.env.REACT_APP_API_URL;
+  const API_URL = process.env.REACT_APP_API_URL;
 
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/panshop/order`);
+        const response = await fetch(
+          `${API_URL}/api/qrGeneraterBoy/order/${id}`
+        );
         if (!response.ok) {
           throw new Error("Failed to fetch orders");
         }
@@ -25,15 +28,10 @@ const OverdueOrders = () => {
         const now = new Date();
         const overdueOrders = data.filter(
           (order) =>
-            order.status === "pending" && new Date(order.deliveryTime) < now
-        );
-        // Filter orders based on deliveryEmail
-
-        const filteredOrders = overdueOrders.filter(
-          (order) => order.assignTo === deliveryEmail
+            order.status === "confirmed" && new Date(order.deliveryTime) < now
         );
 
-        setOrders(filteredOrders);
+        setOrders(overdueOrders);
       } catch (error) {
         setError(error.message);
         toast.error(error.message);
@@ -97,97 +95,75 @@ const OverdueOrders = () => {
   };
 
   return (
-    <div className="container mx-auto overflow-y-auto h-screen p-4 md:p-10">
+    <div className="container mx-auto overflow-y-auto h-screen p-4 sm:p-6">
       <ToastContainer />
-      <h1 className="text-3xl font-bold mb-6 text-center underline text-blue-600">
+      <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center underline text-blue-600">
         Overdue Orders
       </h1>
       {error && <p className="text-red-500 text-center">Error: {error}</p>}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {orders.map((order) => (
-          <div
-            key={order._id}
-            className="border border-gray-300 p-4 rounded bg-gradient-to-r bg-[#e8f0fe] shadow-lg"
-          >
-            <h2 className="text-xl font-bold mb-4 text-blue-700 border-b-2 border-blue-600 pb-2">
-              Order ID: {order._id}
-            </h2>
-            <div className="grid grid-cols-[auto,1fr] gap-x-4 gap-y-2 items-start">
-              <p className="font-semibold text-gray-700 text-right border-r-2 border-blue-600 pr-4">
-                Pan Shop Owner Name:
-              </p>
-              <p className="text-gray-800">{order.panShopOwnerName}</p>
-              <p className="font-semibold text-gray-700 text-right border-r-2 border-blue-600 pr-4">
-                Pan Shop Owner Address:
-              </p>
-              <p className="text-gray-800">{order.panShopOwneraddress}</p>
-              <p className="font-semibold text-gray-700 text-right border-r-2 border-blue-600 pr-4">
-                Status:
-              </p>
-              <p className="text-gray-800">{order.status}</p>
-              <p className="font-semibold text-gray-700 text-right border-r-2 border-blue-600 pr-4">
-                Delivery Time:
-              </p>
-              <p className="text-gray-800">{order.deliveryTime}</p>
-              <p className="font-semibold text-gray-700 text-right border-r-2 border-blue-600 pr-4">
-                Products:
-              </p>
-              <ul className="list-disc pl-5 text-gray-800">
-                {order.products.map((product) => (
-                  <li key={product._id} className="mb-1">
-                    {product.productNames} - Quantity: {product.quantity} -
-                    Price: <FaRupeeSign />
-                    {product.price}
-                  </li>
-                ))}
-              </ul>
-              <p className="font-semibold text-gray-700 text-right border-r-2 border-blue-600 pr-4">
-                Total Price:
-              </p>
-              <p className="text-gray-800 font-bold">
-                <FaRupeeSign />
-                {order.totalPrice}
-              </p>
-            </div>
-            <div className="mt-4 text-right">
-              <button
-                className="bg-blue-500 text-white p-2 rounded hover:bg-blue-700"
-                onClick={() => handleOTPSubmit(order)}
-              >
-                Submit OTP
-              </button>
-            </div>
-          </div>
-        ))}
+      <div className="overflow-x-auto">
+        <table className="min-w-full bg-white border border-gray-300">
+          <thead>
+            <tr className="bg-blue-600 text-white">
+              <th className="px-4 py-2 text-left">Order ID</th>
+              <th className="px-4 py-2 text-left">Pan Shop Owner Name</th>
+              <th className="px-4 py-2 text-left">Owner Address</th>
+              <th className="px-4 py-2 text-left">Status</th>
+              <th className="px-4 py-2 text-left">Delivery Time</th>
+              <th className="px-4 py-2 text-left">Total Price</th>
+              <th className="px-4 py-2 text-left">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {orders.map((order) => (
+              <tr key={order._id} className="hover:bg-blue-50 border-b">
+                <td className="px-4 py-2">{order._id}</td>
+                <td className="px-4 py-2">{order.panShopOwnerName}</td>
+                <td className="px-4 py-2">{order.panShopOwneraddress}</td>
+                <td className="px-4 py-2">{order.status}</td>
+                <td className="px-4 py-2">{order.deliveryTime}</td>
+                <td className="px-4 py-2 flex items-center">
+                  <FaRupeeSign className="mr-1" />
+                  {order.totalPrice}
+                </td>
+                <td className="px-4 py-2">
+                  <button
+                    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700"
+                    onClick={() => handleOTPSubmit(order)}
+                  >
+                    Submit OTP
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
       {showModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 ">
-          <div className="bg-[#e8f0fe]  p-6 md:p-12 shadow-lg rounded ">
-            <h2 className="text-xl font-bold mb-4 text-center text-blue-700">
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+          <div className="bg-white p-6 sm:p-8 shadow-lg rounded w-[90%] sm:w-auto">
+            <h2 className="text-lg sm:text-xl font-bold mb-4 text-center text-blue-700">
               Enter OTP
             </h2>
             <form onSubmit={submitOtp}>
-              <div className="flex space-x-4 justify-center">
+              <div className="flex space-x-2 justify-center">
                 {[0, 1, 2, 3].map((index) => (
                   <input
                     key={index}
                     ref={(el) => (inputRefs.current[index] = el)}
                     type="text"
                     maxLength="1"
-                    className="border rounded w-12 h-12 text-center text-gray-800 "
+                    className="border rounded w-10 h-10 sm:w-12 sm:h-12 text-center text-gray-800"
                     onChange={(e) =>
-                      handleInputChange(index, e.target.value, e.keyCode)
-                    }
-                    onKeyDown={(e) =>
                       handleInputChange(index, e.target.value, e.keyCode)
                     }
                   />
                 ))}
               </div>
-              <div className="flex justify-center mt-8">
+              <div className="mt-6 flex justify-between sm:justify-center space-x-4">
                 <button
                   type="submit"
-                  className="bg-blue-600 text-white px-4 py-2 rounded mr-4 hover:bg-green-700"
+                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-800"
                 >
                   Submit
                 </button>

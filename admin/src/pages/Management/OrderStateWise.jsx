@@ -100,7 +100,7 @@ export default function OrderStateWise() {
                 {data.panShopOwnerstate}
               </StyledTableCell>
               <StyledTableCell align="right">
-                rs {data.totalPrice}
+              ₹ {data.totalPrice}
               </StyledTableCell>
               <StyledTableCell align="right">
                 {getTotalQuantity(data.products)}

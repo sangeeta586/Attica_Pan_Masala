@@ -1,8 +1,15 @@
 const asyncHandler = require("express-async-handler");
 const PanShopOrder = require('../models/panShopOrderModel');
 const PanShopOwner = require("../models/panShopOwnerModel");
+const Stockist = require("../models/stockistModel");
 const qrcode = require('qrcode'); // Add QR code generation
 const fs = require('fs'); // Add file system module for file handling
+ const mongoose = require("mongoose");
+
+ function generateOtp() {
+  const otp = Math.floor(1000 + Math.random() * 9000); // Generate a random 4-digit number
+  return otp.toString();  // Return OTP as a string
+}
 
 // Create a new Pan Shop Order
 const createPanShopOrder = asyncHandler(async (req, res) => {
@@ -21,13 +28,14 @@ const createPanShopOrder = asyncHandler(async (req, res) => {
       superStockistEmail,
       stockistEmail,
       panShopOwner_id,
-      panShopOwnerName,
+      panShopOwnerName, 
       panShopOwnerstate,
       panShopOwneraddress,
       status,
       deliveryTime,
       assignTo,
-      otp
+      otp,
+   
     });
 
     res.status(201).json(order); // Return the created order
@@ -73,13 +81,15 @@ const assignedToorderStockitAndSuperStockit = asyncHandler(async (req, res) => {
     const {
       superStockistEmail,
       stockistEmail,
-      status
+      status,superStockistStatus,stockistStatus
     } = req.body;
 
     // Update specific fields if they exist in the request body
     if (superStockistEmail) existingOrder.superStockistEmail = superStockistEmail;
     if (stockistEmail) existingOrder.stockistEmail = stockistEmail;
     if (status) existingOrder.status = status; // Update order status if provided
+    if (superStockistStatus) existingOrder.superStockistStatus = superStockistStatus;
+    if (stockistStatus) existingOrder.stockistStatus = stockistStatus; // Update stockist status if provided
 
     // Save the updated order
     const updatedOrder = await existingOrder.save();
@@ -94,7 +104,7 @@ const assignedToorderStockitAndSuperStockit = asyncHandler(async (req, res) => {
 
 const assignToOrderToDeliverBoy = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { deliverBoyId,deliveryTime } = req.body;
+  const { deliverBoyId,deliveryTime,superStockistdeliveryTime, deliveryBoyOrderStatus } = req.body;
 
   try {
     // Check if the order exists
@@ -111,7 +121,9 @@ const assignToOrderToDeliverBoy = asyncHandler(async (req, res) => {
     // Assign deliverBoyId and update order status
     existingOrder.deliveryBoyId = deliverBoyId;
     existingOrder.status = "confirmed";
+    existingOrder.deliveryBoyOrderStatus = deliveryBoyOrderStatus;
     existingOrder.deliveryTime = deliveryTime; // Update delivery time if provided
+    existingOrder.superStockistdeliveryBoyId = superStockistdeliveryTime;
 
     // Save the updated order
     const updatedOrder = await existingOrder.save();
@@ -122,16 +134,84 @@ const assignToOrderToDeliverBoy = asyncHandler(async (req, res) => {
   }
 });
 
+const assignToOrderToSuperStockistDeliverBoy = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { deliveryBoyId, deliveryTime, superStockistDeliveryBoyOrderStatus,superStockistdeliveryTime } = req.body;
+
+  try {
+    // Check if the order exists
+    const existingOrder = await PanShopOrder.findById(id);
+    if (!existingOrder) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    // Ensure deliverBoyId is provided
+    if (!deliveryBoyId) {
+      return res.status(400).json({ error: "Delivery boy ID is required" });
+    }
+
+    // Generate a 4-digit OTP
+    const stockistOtp = generateOtp();
+
+    // Assign deliverBoyId, update order status, and add OTP
+    existingOrder.superStockistdeliveryBoyId = deliveryBoyId;
+    existingOrder.superStockistdeliveryTime = superStockistdeliveryTime;
+    existingOrder.status = "confirmed";
+    existingOrder.deliveryTime = deliveryTime;
+    existingOrder.superStockistDeliveryBoyOrderStatus = superStockistDeliveryBoyOrderStatus;
+    existingOrder.stockistOtp = stockistOtp;  // Save the generated OTP
+
+    // Save the updated order
+    const updatedOrder = await existingOrder.save();
+    res.status(200).json({ message: "Order assigned to delivery boy successfully", order: updatedOrder });
+  } catch (error) {
+    console.error("Error updating panShop order:", error);
+    res.status(500).json({ error: "An error occurred while assigning the order" });
+  }
+});
+
+// Helper function to generate a 4-digit OTP
 
 
+// cancelled order
+
+const cancelOrder = async (req, res) => {
+  const { orderId } = req.params; // Get orderId from URL params
+
+  try {
+      // Find the order by ID and update the status to 'canceled'
+      const order = await PanShopOrder.findByIdAndUpdate(
+          orderId,
+          { status: 'canceled' },
+          { new: true } // This will return the updated document
+      );
+
+      if (!order) {
+          return res.status(404).json({ message: 'Order not found' });
+      }
+
+      // Send the updated order details as a response
+      res.status(200).json({ message: 'Order canceled successfully', order });
+  } catch (error) {
+      // Handle any errors that occur during the process
+      console.error(error);
+      res.status(500).json({ message: 'Server error' });
+  }
+};
 
 // Get All Pan Shop Orders
 const getPanShopOrder = asyncHandler(async (req, res) => {
   try {
-    const orders = await PanShopOrder.find().populate({
-      path: 'deliveryBoyId',
-       
-    }).populate({path:'panShopOwner_id'});
+    const orders = await PanShopOrder.find()
+      .populate({
+        path: 'deliveryBoyId', // Populating deliveryBoyId
+      })
+      .populate({
+        path: 'panShopOwner_id', // Populating panShopOwner_id
+        select: '-qrCodeImage', // Excludes the qrCodeImage field
+      }).populate({
+        path: 'superStockistdeliveryBoyId',
+      })
 
     if (!orders || orders.length === 0) {
       return res.status(404).json({ message: 'No orders found' });
@@ -143,6 +223,7 @@ const getPanShopOrder = asyncHandler(async (req, res) => {
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });
+
 
 
 // Get Pan Shop Owner by ID with QR Code generation
@@ -158,67 +239,47 @@ const getPanShopOwnerById = asyncHandler(async (req, resp) => {
     // Generate QR code data
     const qrData = `https://atticapanmasala-ecommerce.onrender.com/login/${owner._id}`;
 
-    // Generate QR code image
-    const qrImageFilePath = `qr_${owner._id}.png`; // File path for the QR code image
-    await qrcode.toFile(qrImageFilePath, qrData);
+    console.log(qrData);
 
-    // Read the QR code image file as a buffer
-    const qrImageData = fs.readFileSync(qrImageFilePath);
+    // Generate QR code image as a base64 string
+    const qrCodeBase64 = await qrcode.toDataURL(qrData);
 
-    // Delete the QR code image file after reading it
-    fs.unlinkSync(qrImageFilePath);
-
-    // Convert QR code image data to base64
-    const qrCodeBase64 = qrImageData.toString('base64');
-
-    // Send the pan shop owner details along with the base64 representation of the QR code
-    resp.status(200).json({ qrCodeBase64, owner });
+    // Send the pan shop owner details along with the QR code base64 data
+    resp.status(200).json({ qrCode: qrCodeBase64, owner });
   } catch (error) {
     resp.status(500).json({ error: "Failed to generate QR code" });
   }
 });
 
+
 // Get All Order History by Pan Shop Owner ID
 const getAllOrderHistroyByShopOwnerId = asyncHandler(async (req, resp) => {
   try {
-    const id = req.params.id;
+    const id = req.params.id; // Retrieve the Shop Owner ID from request params
+
+    // Check if the Pan Shop Owner exists
     const owner = await PanShopOwner.findById(id);
 
     if (!owner) {
       return resp.status(404).json({ message: "User Doesn't Exist" });
     }
 
+    // Aggregate query to match orders with the Shop Owner ID
     const orders = await PanShopOrder.aggregate([
       {
         $match: {
-          panShopOwner_id: id // Ensure correct field name
-        }
+          panShopOwner_id: new mongoose.Types.ObjectId(id), // Convert string ID to ObjectId
+        },
       },
-      {
-        $project: {
-          _id: 1,
-          "products.productNames": 1,
-          "products.quantity": 1,
-          "products.price": 1,
-          totalPrice: 1,
-          superStockistEmail: 1,
-          stockistEmail: 1,
-          panShopOwner_id: 1,
-          panShopOwnerName: 1,
-          panShopOwneraddress: 1,
-          panShopOwnerstate: 1,
-          createdAt: 1,
-          updatedAt: 1,
-          __v: 1
-        }
-      }
     ]);
 
     resp.status(200).json({ success: true, orders });
   } catch (error) {
+    console.error(error);
     resp.status(500).json({ success: false, message: "An error occurred while retrieving orders" });
   }
 });
+
 
 
 const updateAssignDeliveryTime = asyncHandler(async (req, res) => {
@@ -260,7 +321,7 @@ const matchOtp=asyncHandler(async(req,res)=>{
     const {otp}=req.body;
     if(order.otp===otp){
      // res.status(200).json({message: "otp Match the data "})
-     if(order.status==="pending"){
+     if(order.status==="confirmed"){
        order.status="delivered"
        order.save()
       // res.status(200).json(order)
@@ -277,6 +338,152 @@ const matchOtp=asyncHandler(async(req,res)=>{
    }
  })
 
+
+ const getSuperStockistDeliveryBoy = asyncHandler(async (req, res) => {
+  try {
+    // Fetch orders based on superStockistdeliveryBoyId, excluding unwanted fields
+    const orders = await PanShopOrder.find({
+      superStockistdeliveryBoyId: req.params.id
+    })
+      .select('-panShopOwner_id -panShopOwnerName -panShopOwnerstate -panShopOwneraddress -status -otp'); // Exclude specific fields
+
+    // Check if orders are found
+    if (!orders || orders.length === 0) {
+      return res.status(404).json({ message: 'No orders found' });
+    }
+
+    // Fetch stockist details for each order based on `stockistEmail`
+    const enhancedOrders = await Promise.all(
+      orders.map(async order => {
+        const stockistDetails = await Stockist.findOne({
+          email: order.stockistEmail,
+        }).select('-password  -confirmPassword');;
+
+        return {
+          ...order._doc,
+          stockistDetails, // Include full stockist details in the response
+        };
+      })
+    );
+
+    // Return the enhanced response with stockist details
+    return res.status(200).json(enhancedOrders);
+
+  } catch (error) {
+    // Handle any errors
+    console.error(error);
+    return res.status(500).json({ message: 'Internal Server Error', error });
+  }
+});
+
+
+const updateOrderStatusfromSuperStockistDeliveryBoy = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Validate the ID (ensure it's valid for MongoDB ObjectId)
+    if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ error: "Invalid order ID format" });
+    }
+
+    const existingOrder = await PanShopOrder.findById(id);
+
+    if (!existingOrder) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    const { status, otp } = req.body;
+
+    // Ensure status is provided
+    if (!status) {
+      return res.status(400).json({ error: "Status field is required" });
+    }
+
+    // Ensure OTP is provided
+    if (!otp) {
+      return res.status(400).json({ error: "OTP is required" });
+    }
+
+    // Convert OTP from request body to a number for comparison
+    const otpAsNumber = Number(otp);
+
+    // Debugging logs
+    console.log("Received OTP:", otpAsNumber);
+    console.log("Stored OTP:", existingOrder.stockistOtp);
+
+    // Compare the OTP after type coercion
+    if (otpAsNumber !== existingOrder.stockistOtp) {
+      return res.status(400).json({ error: "Invalid OTP" });
+    }
+
+    // OTP matched; update the order status
+    existingOrder.superStockistdeliveryBoyOrderStatus = status;
+
+    // Save the updated order
+    const updatedOrder = await existingOrder.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Order status updated successfully",
+      data: updatedOrder,
+    });
+  } catch (error) {
+    console.error("Error updating PanShop order:", error);
+    res.status(500).json({
+      success: false,
+      error: "An error occurred while updating the PanShop order",
+    });
+  }
+};
+
+
+const cancleOrderFromTheSuperStockistDeliveyBoy = async(req, res)=>{
+  const { id } = req.params;
+
+  try {
+    // Validate the ID (ensure it's valid for MongoDB ObjectId)
+    if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ error: "Invalid order ID format" });
+    }
+
+    const existingOrder = await PanShopOrder.findById(id);
+    if (!existingOrder) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+    const { status } = req.body;
+
+    // Ensure status is provided
+    if (!status) {
+      return res.status(400).json({ error: "Status field is required" });
+    }
+
+    // Cancelling the order
+    existingOrder.superStockistdeliveryBoyOrderStatus = status;
+
+    // Save the updated order
+    const updatedOrder = await existingOrder.save();
+    res.status(200).json({
+      success: true,
+      message: "Order status updated successfully",
+      data: updatedOrder,
+    });
+    
+  } catch (error) {
+    console.error("Error updating PanShop order:", error);
+    res.status(500).json({
+      success: false,
+      error: "An error occurred while updating the PanShop order",
+    });
+  }
+
+
+}
+
+
+
+
+
+
 module.exports = {
   createPanShopOrder,
   getPanShopOrderById,
@@ -287,7 +494,12 @@ module.exports = {
   getAllOrderHistroyByShopOwnerId,
   updateAssignDeliveryTime,
   matchOtp,
-  assignToOrderToDeliverBoy
+  assignToOrderToDeliverBoy,
+  cancelOrder,
+  assignToOrderToSuperStockistDeliverBoy,
+  getSuperStockistDeliveryBoy,
+  updateOrderStatusfromSuperStockistDeliveryBoy,
+  cancleOrderFromTheSuperStockistDeliveyBoy
   
  
 };

@@ -1,28 +1,38 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom"; // Import useNavigate
-import "./ManagementSidebar.css"; 
+import "./ManagementSidebar.css";
 import "../../Styles/Styles.css";
 import logo from "../../assets/logo.png";
-import { FaShoppingCart, FaWpforms, FaSignOutAlt } from "react-icons/fa";
+import { FaShoppingCart, FaUserPlus, FaSignOutAlt } from "react-icons/fa";
 import { RxDashboard } from "react-icons/rx";
-import { MdSos, MdOutlineDeliveryDining, MdStorefront } from "react-icons/md";
-import GeneralLogout from "../../utils/GeneralLogout";
+import {
+ 
+  MdOutlineDeliveryDining,
+  MdOutlineManageAccounts,
+} from "react-icons/md";
+import { GiShop } from "react-icons/gi";
+import { TbReport } from "react-icons/tb";
 
 const ManagementSidebar = ({ onClose }) => {
   const [showDropdown, setShowDropdown] = useState(false);
+  const [manageDropdown, setManageDropdown] = useState(false);
+  const [shopDropdown, setShopDropdown] = useState(false);
+  const [trackerDropdown, setTrackerDropdown] = useState(false);
   const dropdownRef = useRef(null);
-  const navigate = useNavigate(); // Using useNavigate for navigation
+  const navigate = useNavigate();
 
   const toggleDropdown = () => setShowDropdown(!showDropdown);
-
+  const togglemanageDropdown = () => setManageDropdown(!manageDropdown);
+  const toggleShopDropdown = () => setShopDropdown(!shopDropdown);
+  const toggleTrackerDropdown = () => setTrackerDropdown(!trackerDropdown);
   const handleItemClick = (route) => {
     if (route) {
-      navigate(route); 
+      navigate(route);
     }
     if (onClose) {
-      onClose(); // Optional: close sidebar if needed
+      onClose();
     }
-    setShowDropdown(false); // Close dropdown after clicking
+    setShowDropdown(false);
   };
 
   useEffect(() => {
@@ -37,7 +47,7 @@ const ManagementSidebar = ({ onClose }) => {
 
   const handleLogout = () => {
     localStorage.clear();
-    navigate("/"); // Redirect to login page
+    navigate("/");
   };
 
   return (
@@ -52,7 +62,9 @@ const ManagementSidebar = ({ onClose }) => {
           onClick={() => handleItemClick("/managementDashboard")}
         />
         <NavItem
-          icon={<FaShoppingCart style={{ color: "#047857", fontSize: "2rem" }} />}
+          icon={
+            <FaShoppingCart style={{ color: "#047857", fontSize: "2rem" }} />
+          }
           text="Orders"
           onClick={() => handleItemClick("/orderHistory")}
         />
@@ -61,8 +73,8 @@ const ManagementSidebar = ({ onClose }) => {
             className="nav-item nav-item-dropdown flex items-center gap-4 cursor-pointer p-4 transition duration-300 ease-in-out transform rounded-full mb-2"
             onClick={toggleDropdown}
           >
-            <FaWpforms style={{ color: "violet", fontSize: "2rem" }} />
-            <span className="text-lg font-semibold">Registration</span>
+            <FaUserPlus style={{ color: "violet", fontSize: "2rem" }} />
+            <span className="text-lg font-semibold">Registrations</span>
           </span>
           {showDropdown && (
             <div className="flex justify-start ml-10 flex-col font-semibold text-xl text-black">
@@ -78,26 +90,127 @@ const ManagementSidebar = ({ onClose }) => {
                 text="Delivery Boy"
                 onClick={() => handleItemClick("/deliveryboyDetails")}
               />
+
+              {/* <DropdownItem
+                text="Field Manager"
+                onClick={() => handleItemClick("/ListofregisteredFieldManager")}
+              /> */}
+
+              <DropdownItem
+                text="Field Executive Approval"
+                onClick={() => handleItemClick("/Field-Executive-Approval")}
+              />
+              {/* 
+              <DropdownItem
+                text=" Area Seal Manager "
+                onClick={() => handleItemClick("/AreaSealManagerDetails")}
+              /> */}
             </div>
           )}
         </div>
-        <NavItem
+
+        <div className="relative">
+          <span
+            className="nav-item nav-item-dropdown flex items-center gap-4 cursor-pointer p-4 transition duration-300 ease-in-out transform rounded-full mb-2"
+            onClick={togglemanageDropdown}
+          >
+            <MdOutlineManageAccounts
+              style={{ color: "#047857", fontSize: "2rem" }}
+            />
+            <span className="text-lg font-semibold">Manage Users</span>
+          </span>
+          {manageDropdown && (
+            <div className="flex justify-start ml-10 flex-col font-semibold text-xl text-black">
+              <DropdownItem
+                text="Super Stockist"
+                onClick={() => handleItemClick("/manage/superStockit")}
+              />
+              <DropdownItem
+                text="Stockist"
+                onClick={() => handleItemClick("/manage/stockit")}
+              />
+              <DropdownItem
+                text="Field Executive"
+                onClick={() => handleItemClick("/manage/Field-Executive")}
+              />
+              <DropdownItem
+                text="Field Executive Approval"
+                onClick={() => handleItemClick("/mange/Field-Executive-Approval")}
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="relative">
+          <span
+            className="nav-item nav-item-dropdown flex items-center gap-4 cursor-pointer p-4 transition duration-300 ease-in-out transform rounded-full mb-2"
+            onClick={toggleShopDropdown}
+          >
+            <GiShop style={{ color: "#047857", fontSize: "2rem" }} />
+            <span className="text-lg font-semibold">Shop Details</span>
+          </span>
+          {shopDropdown && (
+            <div className="flex justify-start ml-10 flex-col font-semibold text-xl text-black">
+              <DropdownItem
+                text="Pan Shop Details"
+                onClick={() => handleItemClick("/panshowDetails")}
+              />
+              {/* <DropdownItem
+                text="Inspection Shop"
+                onClick={() => handleItemClick("/management/inspection/shop")}
+              /> */}
+              
+            </div>
+          )}
+        </div>
+
+        <div className="relative">
+          <span
+            className="nav-item nav-item-dropdown flex items-center gap-4 cursor-pointer p-4 transition duration-300 ease-in-out transform rounded-full mb-2"
+            onClick={toggleTrackerDropdown}
+          >
+            <MdOutlineDeliveryDining
+              style={{ color: "blue", fontSize: "2rem" }}
+            />
+            <span className="text-lg font-semibold">Trackers</span>
+          </span>
+          {trackerDropdown && (
+            <div className="flex justify-start ml-10 flex-col font-semibold text-xl text-black">
+              <DropdownItem
+                text="Delivery Tracker"
+                onClick={() => handleItemClick("/deliveryBoyTracker")}
+              />
+              {/* <DropdownItem
+                text="Area Seal Manager"
+                onClick={() => handleItemClick("/areaManagerTracker")}
+              /> */}
+              <DropdownItem
+                text="Field Executive"
+                onClick={() => handleItemClick("/field-executive/details")}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* <NavItem
+          icon={<TbReport style={{ color: "red", fontSize: "2rem" }} />}
+          text="ShowCase"
+          onClick={() => handleItemClick("/showCase")}
+        /> */}
+
+        {/* <NavItem
           icon={<MdSos style={{ color: "red", fontSize: "2rem" }} />}
           text="SOS"
           onClick={() => handleItemClick("/sos-homepage")}
-        />
-        <NavItem
-          icon={<MdOutlineDeliveryDining style={{ color: "blue", fontSize: "2rem" }} />}
-          text="DeliveryBoy-Tracker"
-          onClick={() => handleItemClick("/deliveryBoyTracker")}
-        />
-        <NavItem
-          icon={<MdStorefront style={{ color: "green", fontSize: "2rem" }} />}
+        /> */}
+
+        {/* <NavItem
+          icon={<GiShop style={{ color: "green", fontSize: "2rem" }} />}
           text="Pan Shop Details"
           onClick={() => handleItemClick("/panshowDetails")}
-        />
+        /> */}
         <NavItem
-          icon={<MdStorefront style={{ color: "green", fontSize: "2rem" }} />}
+          icon={<FaUserPlus style={{ color: "green", fontSize: "2rem" }} />}
           text="Create Product"
           onClick={() => handleItemClick("/productadded")}
         />

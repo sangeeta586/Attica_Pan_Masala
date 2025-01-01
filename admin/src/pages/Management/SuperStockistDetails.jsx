@@ -5,6 +5,7 @@ import SuperstockistRegister from './Register/SuperstockistRegister';
 import ManagementSideBarModal from './ManagementChart/ManagementSideBarModal';
 import { useNavigate } from 'react-router-dom';
 import { BASE_URL } from '../../constants';
+import Swal from "sweetalert2";
 
 const SuperStockistDetails = () => {
   const [superStockists, setSuperStockists] = useState([]);
@@ -12,6 +13,7 @@ const SuperStockistDetails = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [sortConfig, setSortConfig] = useState({ key: 'username', direction: 'asc' });
+  const [selectedSuperstockist, setSelectedSuperstockist] = useState();
 
   // Search state variables
   const [searchTerm, setSearchTerm] = useState('');
@@ -98,6 +100,45 @@ const SuperStockistDetails = () => {
     return <div className="flex justify-center mt-4">{pageNumbers}</div>;
   };
 
+  const handleUpdate = (deliveryBoy) => {
+    setSelectedSuperstockist(deliveryBoy);
+    setShowModal(true);
+  };
+
+
+  const handleDeleteClick = async (id) => {
+    const confirmResult = await Swal.fire({
+      title: "Are you sure?",
+      text: "This action cannot be undone!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "No, cancel!",
+      buttonsStyling: false, // Disable SweetAlert2 default button styling
+      customClass: {
+        confirmButton: "bg-red-500 text-white px-4 py-2 rounded-md mx-2", // Add margin to the button
+        cancelButton: "bg-gray-500 text-white px-4 py-2 rounded-md mx-2" // Add margin to the button
+      }
+    });
+
+    if (confirmResult.isConfirmed) {
+      try {
+        const response = await fetch(`${BASE_URL}/api/qrGeneraterBoy/${id}`, {
+          method: "DELETE",
+        });
+        if (response.ok) {
+          fetchDeliveryBoys();
+          Swal.fire("Deleted!", "Delivery Boy has been deleted.", "success");
+        } else {
+          throw new Error("Failed to delete delivery boy");
+        }
+      } catch (error) {
+        console.error("Error deleting delivery boy:", error);
+        Swal.fire("Error", "Could not delete delivery boy", "error");
+      }
+    }
+  };
+
   return (
     <div className="flex gap-6 bg-[#dbeafe] w-full">
       <div className="h-screen md:block lg:block hidden">
@@ -125,7 +166,7 @@ const SuperStockistDetails = () => {
           <div className="fixed inset-0 z-50 flex items-center justify-center">
             <div className="absolute inset-0 bg-black opacity-50"></div>
             <div className="z-50 bg-white p-8 rounded-lg shadow-lg">
-              <SuperstockistRegister onClose={handleCloseModal} />
+              <SuperstockistRegister onClose={handleCloseModal} selectSuperStockist={selectedSuperstockist} />
             </div>
           </div>
         )}
@@ -157,12 +198,7 @@ const SuperStockistDetails = () => {
                     >
                       Name
                     </th>
-                    <th
-                      onClick={() => sortByColumn('email')}
-                      className="px-2 py-4 md:text-lg text-xs text-left border-r-2 border-white cursor-pointer"
-                    >
-                      Email
-                    </th>
+
                     <th
                       onClick={() => sortByColumn('address')}
                       className="px-2 py-4 md:text-lg text-xs text-left border-r-2 border-white cursor-pointer"
@@ -175,25 +211,47 @@ const SuperStockistDetails = () => {
                     >
                       Warehouse Name
                     </th>
-                    <th
-                      onClick={() => sortByColumn('state')}
-                      className="px-2 py-4 md:text-lg text-xs text-left border-r-2 border-white cursor-pointer"
-                    >
-                      State
-                    </th>
+
                     <th className="px-2 py-4 md:text-lg text-xs text-left">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {currentStockists.map((superStockist) => (
                     <tr key={superStockist._id} className="bg-gray-200 border-b-2 border-blue-200">
-                      <td className="px-2 py-4 md:text-lg text-xs text-left whitespace-nowrap overflow-hidden overflow-ellipsis border-r-2 border-white">{superStockist.username}</td>
-                      <td className="px-2 py-4 md:text-lg text-xs text-left whitespace-nowrap overflow-hidden overflow-ellipsis border-r-2 border-white">{superStockist.email}</td>
-                      <td className="px-2 py-4 md:text-lg text-xs text-left whitespace-nowrap overflow-hidden overflow-ellipsis border-r-2 border-white">{superStockist.address}</td>
+                      <td className="px-2 py-4 md:text-lg text-xs text-left whitespace-nowrap border-r-2 border-white">
+                        <div className=" px-2 py-4 md:text-lg text-xs text-left whitespace-nowrap overflow-hidden overflow-ellipsis border-r-2 border-white" >
+                          <p className="truncate">{superStockist.username}</p>
+                          <p className="truncate text-gray-500">{superStockist.email}</p>
+                          <p className="truncate text-gray-500">{superStockist.phoneNo}</p>
+                        </div>
+                      </td>
+
+
+                      <td className="px-2 py-4 md:text-lg text-xs text-left whitespace-nowrap overflow-hidden overflow-ellipsis border-r-2 border-white">
+                        <div className="flex flex-col">
+                          <span className="truncate">{superStockist.address}</span>
+                          <span className="truncate text-gray-500">{superStockist.city}, {superStockist.state} - {superStockist.pinCode}</span>
+                        </div>
+                      </td>
+
                       <td className="px-2 py-4 md:text-lg text-xs text-left whitespace-nowrap overflow-hidden overflow-ellipsis border-r-2 border-white">{superStockist.wareHouseName}</td>
-                      <td className="px-2 py-4 md:text-lg text-xs text-left whitespace-nowrap overflow-hidden overflow-ellipsis border-r-2 border-white">{superStockist.state}</td>
-                      <td className="flex gap-1 px-2 py-4">
-                        <Button onClick={() => resetHandler(superStockist._id)} color="blue">Reset Password</Button>
+
+                      <td className="px-2 py-4 md:text-lg text-xs text-left whitespace-nowrap overflow-hidden overflow-ellipsis border-r-2 border-white">
+                        <Button onClick={() => handleUpdate(superStockist)} className="bg-blue-500 text-white p-2 rounded">
+                          Update
+                        </Button>
+                        <Button
+                          onClick={() => handleDeleteClick(superStockist._id)}
+                          className="bg-red-500 text-white p-2 rounded ml-2"
+                        >
+                          Delete
+                        </Button>
+                        <Button
+                          onClick={() => resetHandler(superStockist._id)}
+                          className="bg-orange-500 text-white p-2 rounded ml-2"
+                        >
+                          Reset Password
+                        </Button>
                       </td>
                     </tr>
                   ))}
@@ -201,7 +259,7 @@ const SuperStockistDetails = () => {
               </table>
             </div>
 
-           
+
           </div>
           {renderPagination()}
         </div>

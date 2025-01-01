@@ -4,6 +4,8 @@ import ManagementSidebar from './ManagementSidebar';
 import StockistRegister from './Register/StockistRegister';
 import ManagementSideBarModal from "./ManagementChart/ManagementSideBarModal";
 import { BASE_URL } from '../../constants';
+import Swal from "sweetalert2";
+
 
 const StockistDetails = () => {
   const [stockists, setStockists] = useState([]);
@@ -11,6 +13,7 @@ const StockistDetails = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState('username');
   const [sortDirection, setSortDirection] = useState('asc');
+  const [selectedStockist, setSelectedStockist] = useState();
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -72,6 +75,40 @@ const StockistDetails = () => {
   // Calculate total pages
   const totalPages = Math.ceil(filteredAndSortedStockists().length / itemsPerPage);
 
+  const handleDeleteClick = async (id) => {
+    const confirmResult = await Swal.fire({
+      title: "Are you sure?",
+      text: "This action cannot be undone!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "No, cancel!",
+      buttonsStyling: false, // Disable SweetAlert2 default button styling
+      customClass: {
+        confirmButton: "bg-red-500 text-white px-4 py-2 rounded-md mx-2", // Add margin to the button
+        cancelButton: "bg-gray-500 text-white px-4 py-2 rounded-md mx-2" // Add margin to the button
+      }
+    });
+
+    if (confirmResult.isConfirmed) {
+      try {
+        const response = await fetch(`${BASE_URL}/api/executives/${id}`, {
+          method: "DELETE",
+        });
+        
+      } catch (error) {
+        console.error("Error deleting delivery boy:", error);
+        Swal.fire("Error", "Could not delete delivery boy", "error");
+      }
+    }
+  };
+
+  const handleUpdate = (deliveryBoy) => {
+    setSelectedStockist(deliveryBoy);
+    setShowModal(true);
+  };
+
+
   return (
     <div className="flex gap-6 bg-[#dbeafe] w-full">
       <div className="h-screen md:block lg:block hidden">
@@ -99,7 +136,7 @@ const StockistDetails = () => {
           <div className="fixed inset-0 z-50 flex items-center justify-center">
             <div className="absolute inset-0 bg-black opacity-50"></div>
             <div className="z-50 bg-white p-8 rounded-lg shadow-lg">
-              <StockistRegister onClose={handleCloseModal} />
+              <StockistRegister onClose={handleCloseModal} selectedStockist={selectedStockist} />
             </div>
           </div>
         )}
@@ -142,6 +179,7 @@ const StockistDetails = () => {
                     <th className="px-2 py-4 md:text-lg text-xs text-left border-r-2 border-white">State</th>
                     <th className="px-2 py-4 md:text-lg text-xs text-left border-r-2 border-white">Address</th>
                     <th className="px-2 py-4 md:text-lg text-xs text-left">PinCode</th>
+                    <th className="px-2 py-4 md:text-lg text-xs text-left border-r-2 border-white">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -152,6 +190,18 @@ const StockistDetails = () => {
                       <td className="px-2 py-4 md:text-lg text-xs text-left whitespace-nowrap overflow-hidden overflow-ellipsis border-r-2 border-white">{stockist.state}</td>
                       <td className="px-2 py-4 md:text-lg text-xs text-left whitespace-nowrap overflow-hidden overflow-ellipsis border-r-2 border-white">{stockist.address}</td>
                       <td className="px-2 py-4 md:text-lg text-xs text-left whitespace-nowrap overflow-hidden overflow-ellipsis">{stockist.pinCode}</td>
+                      <td className="px-2 py-4 md:text-lg text-xs text-left whitespace-nowrap overflow-hidden overflow-ellipsis border-r-2 border-white">
+                        <Button onClick={() => handleUpdate(stockist)} className="bg-blue-500 text-white p-2 rounded">
+                          Update
+                        </Button>
+                        <Button
+                          onClick={() => handleDeleteClick(stockist._id)}
+                          className="bg-red-500 text-white p-2 rounded ml-2"
+                        >
+                          Delete
+                        </Button>
+                       
+                      </td>
                     </tr>
                   ))}
                 </tbody>

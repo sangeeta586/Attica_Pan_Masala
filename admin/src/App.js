@@ -56,6 +56,30 @@ import {SuperStockistProfile} from "./pages/AllUserDetails/SuperStockistProfile"
 import AddProduct from "./pages/Management/ManagementChart/AddProduct";
 import SuperStockistOrderHomePage from "./pages/SuperStockist/Order/SuperStockistOrderHomePage";
 
+import SuperStockistDevelivey from "./pages/SuperStockist/SuperStockistDevelivey";
+
+import DeliveryBoy from "./pages/Executive/DeliveryBoy/DeliveryBoy";
+import SuperStockist from "./pages/Management/Manage/SuperStockist/SuperStockist";
+import Stockist from "./pages/Management/Manage/stockist/Stockist";
+import FieldManager from "./pages/Management/Manage/fieldManager/FieldManager";
+import SuperStockistDashboard from "./pages/Management/Manage/SuperStockist/SuperStockistDashboard";
+import StockistDashBoard from "./pages/Management/Manage/stockist/StockistDashBoard";
+import { TrackOrder } from "./pages/AllUserDetails/TrackOrder";
+
+
+import ListOfRegisteredField from "./pages/Management/Manage/fieldManager/registerd/ListOfRegisterdField";
+
+import { AreaSealManagerDetails } from "./pages/Management/AreaSealManagerDetails";
+import { AreaMangerTacker } from "./pages/Management/DeliveryBoyTracker/AreaMangerTacker";
+import RegisterOrEditFieldManager from "./pages/Management/Manage/fieldManager/registerd/RegisterOrEditFieldManager";
+import ListOfInspection from "./pages/Management/InspectionShop/ListOfInspection";
+import { FieldMaangerTracker } from "./pages/Management/FieldManagerTracker/FieldMaangerTracker";
+import ShowCaseList from "./pages/Management/ShowCase/ShowCaseList";
+import ListOfRegisterdFieldMangerAdmin from "./pages/Management/Manage/fieldManagerAdmin/registerd/ListOfRegisterdFieldMangerAdmin";
+import FieldManagerAdmin from "./pages/Management/Manage/fieldManagerAdmin/FieldManagerAdmin";
+
+
+
 
 function App() {
   const navigate = useNavigate();
@@ -81,7 +105,13 @@ function App() {
   const routesName = "$2a$04$YfW4xcTH6aSEkkxIcTu/C.waONt/RaiJjPr09ybf9vTo5UFkWPtqS$2a$04$YfW4xcTH6aSEkkxIcTu/C.waONt/RaiJjPr09ybf9vTo5UFkWPtqS$2a$04$YfW4xcTH6aSEkkxIcTu/C.waONt/RaiJjPr09ybf9vTo5UFkWPtqS"
   
   return (
-    <div className="App">
+    <div className="App"   style={{
+      width: "100%",  // Use 100% for better responsiveness, avoid hard-coded values like 108%
+      maxWidth: "100vw", // Ensure it doesn't overflow the viewport
+      margin: "0 auto", // Centering the content horizontally
+      backgroundColor: "#f7f7f7", // Light background color for contrast
+      padding: "20px", // Add padding for spacing around content
+    }}>
       <Routes>
         <Route path="/dashboard" element={<DashBoard />} />
         <Route path="/navbar" element={<Navbar />} />
@@ -138,6 +168,9 @@ function App() {
 
             <Route path="/myOrders" element={<MyOrders />} />
             <Route path="/orderItems" element={<ExecutiveOrderHomePage />} />
+
+            <Route path="/deliveryboys" element={<DeliveryBoy />} />
+
             <Route path="/panshowDetails" element={<PanshowDetails />} />
             <Route path="/stockistDetails" element={<StockistDetails />} />
             <Route
@@ -148,6 +181,9 @@ function App() {
               path="/superstockistRegister"
               element={<SuperstockistRegister />}
             />
+
+            <Route path="/registeredFieldManager" element={<RegisterOrEditFieldManager/>}/>
+            <Route path="/ListofregisteredFieldManager" element={<ListOfRegisteredField/>}/>
 
             <Route
               path="/deliveryboyDetails"
@@ -186,6 +222,33 @@ function App() {
               element={<AddProduct/>}
             />
             <Route path="/superStockitDetails/:id/:name" element={<SuperStockistProfile />} />
+            <Route path="/superStockitDetailsDeliveryboyDetails" element={<SuperStockistDevelivey />} />
+            <Route path="/manage/superStockit" element={<SuperStockist />} />
+            <Route path="/manage/stockit" element={<Stockist />} />
+            <Route path="/manage/Field-Executive" element={<FieldManager/>}/>
+           < Route path="/manage/superStockist/dashboard" element={<SuperStockistDashboard/>}/>
+           <Route path="/manage/stockist/dashboard" element={<StockistDashBoard/>} />
+           
+           <Route path="/manage/stockist/details" element={<StockistDetails/>}/>
+
+            <Route path="/trackerOrder/:name" element={<TrackOrder />} />
+
+            <Route path="/AreaSealManagerDetails" element={<AreaSealManagerDetails/>} />
+            <Route path="/areaManagerTracker" element={<AreaMangerTacker/>} />
+
+            <Route path="/management/inspection/shop" element={<ListOfInspection/>}/>
+            <Route path = "/field-executive/details" element={<FieldMaangerTracker/>}/>
+
+            <Route path = "/showCase" element={<ShowCaseList/>}/>
+
+            <Route path = "/Field-Executive-Approval" element={<ListOfRegisterdFieldMangerAdmin/>}/>
+
+            <Route path = "/mange/Field-Executive-Approval" element={<FieldManagerAdmin/>}/>
+
+
+
+
+
           </>
         )}
       </Routes>

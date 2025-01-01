@@ -19,8 +19,6 @@ const AdminSchema = mongoose.Schema(
       type: String,
       required: [true, "Please add the confirm password"],
     },
-    
-
   },
   {
     timestamps: true, // Automatically adds `createdAt` and `updatedAt`

@@ -11,8 +11,8 @@ import {
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { BASE_URL } from "../../../constants";
-
-const RegisterForm = ({ onClose }) => {
+import { IoMdClose } from "react-icons/io";
+const RegisterForm = ({ onClose,selectDeliveryboy }) => {
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -23,44 +23,61 @@ const RegisterForm = ({ onClose }) => {
     city: "",
     pinCode: "",
     state: "",
+    stockist: null, // Store the whole stockist object
   });
-  const [executiveEmails, setExecutiveEmails] = useState([]);
-  const [selectedExecutiveEmail, setSelectedExecutiveEmail] = useState("");
+
+  const [executiveDetails, setExecutiveDetails] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filteredExecutives, setFilteredExecutives] = useState([]);
 
   useEffect(() => {
-    const fetchExecutiveEmails = async () => {
+    const fetchExecutiveDetails = async () => {
       try {
-        const response = await axios.get(
-          `${BASE_URL}/api/executives/getAllUser`
-        );
-        const executiveEmails = response.data.map(
-          (executive) => executive.email
-        );
-        setExecutiveEmails(executiveEmails);
+        const response = await axios.get(`${BASE_URL}/api/executives/getAllUser`);
+        setExecutiveDetails(response.data); // Save all executives
+        setFilteredExecutives(response.data); // Initialize filtered list
       } catch (error) {
-        console.error("Failed to fetch executive emails:", error);
+        console.error("Failed to fetch executive details:", error);
       }
     };
-    fetchExecutiveEmails();
+    fetchExecutiveDetails();
   }, []);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleSearch = (e) => {
+    const term = e.target.value.toLowerCase();
+    setSearchTerm(term);
+    const filtered = executiveDetails.filter((executive) =>
+      Object.values(executive).some((value) =>
+        String(value).toLowerCase().includes(term)
+      )
+    );
+    setFilteredExecutives(filtered);
+  };
+
+  const handleExecutiveSelection = (executive) => {
+    setFormData({ ...formData, selectedStockist: executive }); // Store full stockist object
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validation logic (e.g., password matching)
+    if (formData.password !== formData.confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
     try {
       const dataToSend = {
         ...formData,
-        stockistEmailId: selectedExecutiveEmail,
+        stockist: formData.stockist?._id, // If stockist is selected, send their ID
       };
-      const response = await axios.post(
-        `${BASE_URL}/api/qrGeneraterBoy/register`,
-        dataToSend
-      );
-      toast.success("User registered successfully"); // Display toast on success
-      console.log("User registered successfully:", response.data);
+
+      const response = selectDeliveryboy
+        ? await axios.put(`${BASE_URL}/api/qrGeneraterBoy/${selectDeliveryboy._id}`, dataToSend)
+        : await axios.post(`${BASE_URL}/api/qrGeneraterBoy/register`, dataToSend);
+
+      toast.success(selectDeliveryboy ? "User updated successfully" : "User registered successfully");
 
       setFormData({
         username: "",
@@ -72,172 +89,165 @@ const RegisterForm = ({ onClose }) => {
         city: "",
         pinCode: "",
         state: "",
+        selectedStockist: null,
       });
-      setSelectedExecutiveEmail(""); // Clear selected executive email after successful registration
-      onClose(); // Close the modal after successful registration
+      onClose();
     } catch (error) {
       console.error("Registration failed:", error.response.data.error);
-      toast.error(`Registration failed: ${error.response.data.error}`); // Display toast on registration failure
+      toast.error(`Registration failed: ${error.response.data.error}`);
     }
   };
 
-  const handleCancel = () => {
-    onClose(); // Close the modal when cancel button is clicked
-  };
+
+  useEffect(() => {
+    if (selectDeliveryboy) {
+      setFormData({
+        username: selectDeliveryboy.username,
+        email: selectDeliveryboy.email,
+        phoneNo: selectDeliveryboy.phoneNo,
+        address: selectDeliveryboy.address,
+        city: selectDeliveryboy.city,
+        pinCode: selectDeliveryboy.pinCode,
+        state: selectDeliveryboy.state,
+        stockist: selectDeliveryboy.stockist || null,
+      });
+    }
+  }, [selectDeliveryboy]);
 
   return (
     <div className="flex justify-center items-center h-full">
-      <ToastContainer className="z-50" /> {/* ToastContainer must be placed here */}
+      <ToastContainer className="z-50" />
       <Card color="transparent" shadow={false} className="p-2">
-        <Typography variant="h4" className="text-[#1e40af]">
-          Sign Up
+      <Typography variant="h4" className="text-[#1e40af]">
+          {selectDeliveryboy ? "Update Delivery Boy" : "Registration"}
         </Typography>
-        <Typography color="gray" className="mt-1 font-normal text-[#1e40af]">
-          Nice to meet you! Enter your details to register.
-        </Typography>
-        <form className="mt-8 mb-2 max-w-screen-lg sm:w-96" onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <Input
-              type="text"
-              size="lg"
-              placeholder="Your Name"
-              className="!border-t-blue-gray-200 focus:!border-t-gray-900"
-              labelProps={{ className: "before:content-none after:content-none" }}
-              name="username"
-              id="username"
-              value={formData.username}
-              onChange={handleChange}
-            />
-          </div>
-          <div className="mb-4">
-            <Input
-              type="email"
-              size="lg"
-              placeholder="Your Email"
-              className="!border-t-blue-gray-200 focus:!border-t-gray-900"
-              labelProps={{ className: "before:content-none after:content-none" }}
-              name="email"
-              id="email"
-              value={formData.email}
-              onChange={handleChange}
-            />
-          </div>
-          <div className="mb-4">
-            <Input
-              type="password"
-              size="lg"
-              placeholder="Password"
-              className="!border-t-blue-gray-200 focus:!border-t-gray-900"
-              labelProps={{ className: "before:content-none after:content-none" }}
-              name="password"
-              id="password"
-              value={formData.password}
-              onChange={handleChange}
-            />
-          </div>
-          <div className="mb-4">
-            <Input
-              type="password"
-              size="lg"
-              placeholder="Confirm Password"
-              className="!border-t-blue-gray-200 focus:!border-t-gray-900"
-              labelProps={{ className: "before:content-none after:content-none" }}
-              name="confirmPassword"
-              id="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-            />
-          </div>
-          <div className="mb-4">
-            <Input
-              type="tel"
-              size="lg"
-              placeholder="Phone Number"
-              className="!border-t-blue-gray-200 focus:!border-t-gray-900"
-              labelProps={{ className: "before:content-none after:content-none" }}
-              name="phoneNo"
-              id="phoneNo"
-              value={formData.phoneNo}
-              onChange={handleChange}
-            />
-          </div>
-          <div className="mb-4">
-            <Input
-              type="text"
-              size="lg"
-              placeholder="Address"
-              className="!border-t-blue-gray-200 focus:!border-t-gray-900"
-              labelProps={{ className: "before:content-none after:content-none" }}
-              name="address"
-              id="address"
-              value={formData.address}
-              onChange={handleChange}
-            />
-          </div>
-          <div className="mb-4">
-            <Input
-              type="text"
-              size="lg"
-              placeholder="City"
-              className="!border-t-blue-gray-200 focus:!border-t-gray-900"
-              labelProps={{ className: "before:content-none after:content-none" }}
-              name="city"
-              id="city"
-              value={formData.city}
-              onChange={handleChange}
-            />
-          </div>
-          <div className="mb-4">
-            <Input
-              type="text"
-              size="lg"
-              placeholder="Pin Code"
-              className="!border-t-blue-gray-200 focus:!border-t-gray-900"
-              labelProps={{ className: "before:content-none after:content-none" }}
-              name="pinCode"
-              id="pinCode"
-              value={formData.pinCode}
-              onChange={handleChange}
-            />
-          </div>
-          <div className="mb-4">
-            <Input
-              type="text"
-              size="lg"
-              placeholder="State"
-              className="!border-t-blue-gray-200 focus:!border-t-gray-900"
-              labelProps={{ className: "before:content-none after:content-none" }}
-              name="state"
-              id="state"
-              value={formData.state}
-              onChange={handleChange}
-            />
-          </div>
-          <div className="mb-4">
-            <Select
-              value={selectedExecutiveEmail}
-              onChange={(value) => setSelectedExecutiveEmail(value)}
-              size="lg"
-              className="!border-t-blue-gray-200 focus:!border-t-gray-900"
-            >
-              <Option value="">
-                Select Executive Email
-              </Option>
-              {executiveEmails.map((email) => (
-                <Option key={email} value={email}>
-                  {email}
-                </Option>
-              ))}
-            </Select>
-          </div>
+        <IoMdClose onClick={onClose}  className="absolute top-4 right-3 cursor-pointer  text-2xl"/>
+        <div className="overflow-y-auto max-h-[80vh] p-4">
+          <form className="mt-8 mb-2 max-w-screen-lg sm:w-96" onSubmit={handleSubmit}>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="mb-6">
+                <Input
+                  type="text"
+                  size="lg"
+                  placeholder="Username"
+                  value={formData.username}
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                />
+              </div>
+              <div className="mb-6">
+                <Input
+                  type="email"
+                  size="lg"
+                  placeholder="Email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                />
+              </div>
+              <div className="mb-6">
+                <Input
+                  type="password"
+                  size="lg"
+                  placeholder="Password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                />
+              </div>
+              <div className="mb-6">
+                <Input
+                  type="password"
+                  size="lg"
+                  placeholder="Confirm Password"
+                  value={formData.confirmPassword}
+                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                />
+              </div>
 
-          <Button type="submit" className="mt-6 bg-[#1e40af] hover:bg-blue-400" fullWidth>
-            Sign up
+              {/* Contact Details */}
+              <div className="mb-6">
+                <Input
+                  type="tel"
+                  size="lg"
+                  placeholder="Phone Number"
+                  value={formData.phoneNo}
+                  onChange={(e) => setFormData({ ...formData, phoneNo: e.target.value })}
+                />
+              </div>
+              <div className="mb-6">
+                <Input
+                  type="text"
+                  size="lg"
+                  placeholder="Address"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                />
+              </div>
+              <div className="mb-6">
+                <Input
+                  type="text"
+                  size="lg"
+                  placeholder="City"
+                  value={formData.city}
+                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                />
+              </div>
+              <div className="mb-6">
+                <Input
+                  type="text"
+                  size="lg"
+                  placeholder="State"
+                  value={formData.state}
+                  onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                />
+              </div>
+              <div className="mb-6">
+                <Input
+                  type="text"
+                  size="lg"
+                  placeholder="Pin Code"
+                  value={formData.pinCode}
+                  onChange={(e) => setFormData({ ...formData, pinCode: e.target.value })}
+                />
+              </div>
+              <div className="mb-6">
+                <Input
+                  type="text"
+                  size="lg"
+                  placeholder="Country"
+                  value={formData.country}
+                  onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                />
+              </div>
+
+            </div>
+            <div className="mb-6">
+              <Input
+                type="text"
+                size="lg"
+                placeholder="Search Super Stockists"
+                value={searchTerm}
+                onChange={handleSearch}
+              />
+              <div className="h-60 overflow-y-auto border border-gray-300 mt-2 rounded-md p-2">
+                {filteredExecutives.map((stockist) => (
+                  <div
+                    key={stockist._id}
+                    className={`p-2 my-2 cursor-pointer rounded-md ${formData.selectedStockist?._id === stockist._id
+                      ? "bg-blue-100"
+                      : "hover:bg-gray-100"
+                      }`}
+                    onClick={() => handleExecutiveSelection(stockist)}
+                  >
+                    {stockist.username}, {stockist.city}, {stockist.state}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <Button type="submit" className="mt-6 bg-[#1e40af] hover:bg-blue-400" fullWidth>
+            {selectDeliveryboy ? "Update" : "Sign up"}
           </Button>
-        </form>
-        <Button color="red" className="w-24 ml-auto mt-4" onClick={handleCancel}>
-          Cancel
-        </Button>
+          </form>
+        </div>
+        
       </Card>
     </div>
   );

@@ -9,6 +9,9 @@ const {
   currentUser,
   GetAllUser,
   updatePassword,
+  deleteUser,
+  updateUser,
+  getUserByEmail
 } = require("../controllers/superStockistControllers");
 
 //Register
@@ -24,5 +27,16 @@ router.put("/update-password/:id", updatePassword);
 
 router.get("/current", superStockistValidateToken, currentUser);
 router.get("/getAllUser", GetAllUser);
+
+
+router.put("/:id", updateUser);
+
+router.delete("/:id", deleteUser);
+
+router.post("/", getUserByEmail);
+
+
+
+// Current user information
 
 module.exports = router;

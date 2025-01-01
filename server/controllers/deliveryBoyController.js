@@ -1,10 +1,10 @@
 const asyncHandler = require("express-async-handler");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const QrGeneraterBoySignup = require("../models/deliveryBoysDetailsModels");
 const expressAsyncHandler = require("express-async-handler");
 const mongoose = require("mongoose");
-const Order = require("../models/panShopOrderModel")
+const Order = require("../models/panShopOrderModel");
 
 // @desc Register a new user
 // @route POST /api/users/register
@@ -20,7 +20,7 @@ const registerQrGeneraterBoy = asyncHandler(async (req, res) => {
     pinCode,
     state,
     city,
-    stockistEmailId,
+    stockist,
   } = req.body;
 
   if (
@@ -63,7 +63,7 @@ const registerQrGeneraterBoy = asyncHandler(async (req, res) => {
     pinCode,
     state,
 
-    stockistEmailId,
+    stockist,
   });
 
   if (newUser) {
@@ -104,7 +104,7 @@ const loginUser = asyncHandler(async (req, res) => {
       }
     );
 
-    res.status(200).json({ accessToken ,id:user._id});
+    res.status(200).json({ accessToken, id: user._id });
   } else {
     res.status(401).json({ error: "Invalid email or password" });
   }
@@ -192,34 +192,35 @@ const deleteDeliveryBoyDetails = expressAsyncHandler(async (req, res) => {
   }
   try {
     // Find and delete the administrator by ID
-    const deletedAdministrator = await QrGeneraterBoySignup.findByIdAndDelete(id);
+    const deletedAdministrator = await QrGeneraterBoySignup.findByIdAndDelete(
+      id
+    );
     if (!deletedAdministrator) {
       res.status(404).json({ message: "User not found!" });
       return;
     }
     res.status(200).json({ message: "User deleted successfully!" });
-    } catch (error) {
+  } catch (error) {
     console.error(`Error deleting user: ${error.message}`);
     res.status(500).json({ message: "Server error. Please try again later." });
   }
 });
 
-
 const updateDeliveryBoyDetails = expressAsyncHandler(async (req, res) => {
   const { id } = req.params;
-  const {
-    username,
-    email,
-    phoneNo,
-    address,
-    pinCode,
-    state,
-    city,
-    stockistEmailId,
-  } = req.body;
+  const { username, email, phoneNo, address, pinCode, state, city, stockist } =
+    req.body;
   console.log(`Received ID: ${id}`);
   // Ensure all required fields are provided
-  if (!username ||!email ||!phoneNo ||!address ||!pinCode ||!state ||!city) {
+  if (
+    !username ||
+    !email ||
+    !phoneNo ||
+    !address ||
+    !pinCode ||
+    !state ||
+    !city
+  ) {
     res.status(400).json({ message: "All fields are mandatory!" });
     return;
   }
@@ -242,7 +243,7 @@ const updateDeliveryBoyDetails = expressAsyncHandler(async (req, res) => {
         pinCode,
         state,
         city,
-        stockistEmailId,
+        stockist,
       },
       { new: true }
     );
@@ -251,18 +252,16 @@ const updateDeliveryBoyDetails = expressAsyncHandler(async (req, res) => {
       return;
     }
     res.status(200).json(deliveryBoy);
-    } catch (error) {
+  } catch (error) {
     console.error(`Error updating user: ${error.message}`);
     res.status(500).json({ message: "Server error. Please try again later." });
   }
-
 });
 
 // get by user Id
 
 const getDeliveryBoyById = expressAsyncHandler(async (req, res) => {
   const { id } = req.params;
-  
 
   // Check if ID is valid
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -280,31 +279,26 @@ const getDeliveryBoyById = expressAsyncHandler(async (req, res) => {
     res.status(200).json(deliveryBoy);
   } catch (error) {
     console.error(`Error getting user by ID: ${error.message}`);
-    res.status(500).json({ message: "Server error in getting user by ID" }); 
+    res.status(500).json({ message: "Server error in getting user by ID" });
   }
-}); 
+});
 
 const findOrderByDeliveryBoyId = async (req, res) => {
   const { id } = req.params;
-  
 
   try {
-    const order = await Order.find( {deliveryBoyId: id} );
+    const order = await Order.find({ deliveryBoyId: id });
 
     if (!order) {
-      return res.status(404).json({ message: 'Order not found' });
+      return res.status(404).json({ message: "Order not found" });
     }
 
     return res.status(200).json(order);
   } catch (error) {
-    console.error('Error fetching order:', error);
-    return res.status(500).json({ message: 'Server error' });
+    console.error("Error fetching order:", error);
+    return res.status(500).json({ message: "Server error" });
   }
 };
-
-
-
-
 
 module.exports = {
   registerQrGeneraterBoy,
@@ -315,6 +309,5 @@ module.exports = {
   getDeliveryBoyById,
   updateDeliveryBoyDetails,
   deleteDeliveryBoyDetails,
-  findOrderByDeliveryBoyId
- 
+  findOrderByDeliveryBoyId,
 };

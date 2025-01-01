@@ -13,7 +13,7 @@ function DeliveryBoyHomePage() {
   const [orders, setOrders] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("pending"); // Default active tab
+  const [activeTab, setActiveTab] = useState("confirmed"); // Default active tab
   const [searchQuery, setSearchQuery] = useState(""); // State for search query
   const [currentPage, setCurrentPage] = useState(1); // Pagination state
   const itemsPerPage = 5; // Number of items per page
@@ -40,8 +40,6 @@ function DeliveryBoyHomePage() {
     setIsModalOpen(true);
   };
 
- 
-
   // Check if order is available based on stockist email
   const isOrderAvailable = (order) => {
     return (
@@ -58,10 +56,16 @@ function DeliveryBoyHomePage() {
       (order) =>
         isOrderAvailable(order) &&
         order.status === activeTab &&
-        (order.panShopOwnerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          order.panShopOwneraddress.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (order.panShopOwnerName
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase()) ||
+          order.panShopOwneraddress
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
           order.products.some((product) =>
-            product.productNames.toLowerCase().includes(searchQuery.toLowerCase())
+            product.productNames
+              .toLowerCase()
+              .includes(searchQuery.toLowerCase())
           ))
     )
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // Sort by date
@@ -92,12 +96,16 @@ function DeliveryBoyHomePage() {
 
     if (result.isConfirmed) {
       try {
-        await axios.patch(`${BASE_URL}/api/panshop/order/cancel/${orderId}`);
+        await axios.put(`${BASE_URL}/api/panshop/order/cancel/${orderId}`);
         Swal.fire("Canceled!", "Your order has been canceled.", "success");
         fetchData(); // Refetch orders after cancellation
       } catch (error) {
         console.error("Error canceling order:", error);
-        Swal.fire("Error!", "There was an error canceling your order.", "error");
+        Swal.fire(
+          "Error!",
+          "There was an error canceling your order.",
+          "error"
+        );
       }
     }
   };
@@ -107,6 +115,26 @@ function DeliveryBoyHomePage() {
     navigate("/");
   };
 
+  const isTimeExceeded = (deliveryTime) => {
+    if (!deliveryTime) return false;
+
+    const currentTime = new Date();
+    const deliveryTimeDate = new Date(deliveryTime);
+
+    // Compare if the delivery time exceeds a threshold (e.g., 24 hours from now)
+    const timeDifference = currentTime - deliveryTimeDate;
+
+    // If time difference exceeds 24 hours (86400000 ms), return true
+    return timeDifference > 86400000;
+  };
+
+
+  const handleOnclick = (order) => {
+
+    navigate("/trackerOrder/stockist", { state: { order } });
+  }
+
+
   return (
     <div className="flex font-sans bg-blue-100 h-screen">
       {/* Sidebar */}
@@ -114,28 +142,32 @@ function DeliveryBoyHomePage() {
         <Navbar />
       </div>
 
-
-
-
       <div className="w-full lg:ml-70 xl:ml-80 md:ml-60 flex flex-col h-full px-5">
         <div className="flex items-center flex-wrap lg:justify-between px-5 md:justify-end justify-center lg:gap-10 md:gap-5 gap-1 py-5 h-auto bg-[#FFFFFF] rounded-xl lg:my-5 md:my-5 my-2">
-          <p className="lg:text-2xl md:text-xl text-xs font-bold">My Order</p>
+          <p className="lg:text-2xl md:text-xl text-xs font-bold">My Orders</p>
           <div className="flex justify-center items-center content-center gap-4">
             <Avatar className="" alt="Remy Sharp" src={Img} />
             <p className="lg:text-2xl md:text-xl text-xs font-bold border-4 border-blue-400 p-2 rounded-lg bg-blue-100">
               {localStorage.getItem("email")}
             </p>
-            <Button color="red" className="lg:mr-12 lg:-ml-2 md:mr-8 mr-2 lg:text-md md:text-md text-xs" onClick={handleLogout}>
+            <Button
+              color="red"
+              className="lg:mr-12 lg:-ml-2 md:mr-8 mr-2 lg:text-md md:text-md text-xs"
+              onClick={handleLogout}
+            >
               Logout
             </Button>
           </div>
         </div>
         {/* Tab Buttons */}
         <div className="mb-4 grid lg:grid-cols-10 md:grid-cols-6 grid-cols-2 gap-1">
-          {["processing", "confirmed", "shipped", "delivered", "canceled"].map((status) => (
+          {["confirmed", "delivered", "canceled"].map((status) => (
             <Button
               key={status}
-              className={`mr-2 ${activeTab === status ? "bg-[#001D3D] text-white shadow-lg" : "bg-[hsl(211,100%,66%)] text-white hover:bg-[#001D3D]"}`}
+              className={`mr-2 ${activeTab === status
+                ? "bg-[#001D3D] text-white shadow-lg"
+                : "bg-[hsl(211,100%,66%)] text-white hover:bg-[#001D3D]"
+                }`}
               onClick={() => setActiveTab(status)}
             >
               {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -161,64 +193,195 @@ function DeliveryBoyHomePage() {
               <tr className="bg-[#001D3D] text-white">
                 <th className="border px-4 py-2">PanShop Details</th>
                 <th className="border px-4 py-2">Assign to Super Stockist</th>
-                {activeTab !== "processing" && <th className="border px-4 py-2">Assigned to DeliveryBoy</th>}
+                <th className="border px-4 py-2">Assigned to SuperStockist DeliveryBoy</th>
+
+                <th className="border px-4 py-2">Assigned to DeliveryBoy</th>
+
                 <th className="border px-4 py-2">Products</th>
-                <th className="border px-4 py-2">Total Price</th>
+
                 <th className="border px-4 py-2">Status</th>
+
                 <th className="border px-4 py-2">Actions</th>
+
               </tr>
             </thead>
             <tbody>
               {currentOrders.length > 0 ? (
                 currentOrders.map((order, index) => (
-                  <tr key={order._id} className={`hover:bg-gray-100 ${index % 2 === 0 ? "bg-gray-50" : "bg-white"}`}>
+                  <tr
+                    key={order._id}
+                    className={`hover:bg-gray-100 ${index % 2 === 0 ? "bg-gray-50" : "bg-white"
+                      }`}
+                  >
                     <td className="border px-4 py-2 text-center">
                       {order.panShopOwnerName}
                       <br />
                       {order.panShopOwneraddress}
                     </td>
-                   
-                    <td className="border px-4 py-2">{order.superStockistEmail}</td>
 
+                    <td className="border px-4 py-2 text-center">
+                      {order.superStockistEmail}
+                      <p
+                        className={` ${order.stockistStatus === "pending"
+                          ? "text-yellow-500"
 
-                    {activeTab!== "processing" && (
-                      <td className="border px-4 py-2 text-center">{order.deliveryBoyId?.username}<br />{order.deliveryBoyId?.email}
-
-                      <br />
-                      <Link to={`/DeliveryboyDetails/${order.deliveryBoyId._id}/stockist`} className="text-green-600">Show Details</Link>
+                          : order.stockistStatus === "delivered"
+                            ? "text-purple-500"
+                            : order.stockistStatus === "canceled"
+                              ? "text-red-500"
+                              : ""
+                          }`}
+                      >
+                        {order.stockistStatus}
+                      </p>
                     </td>
-                    )}
-                     
-                    <td className="border px-4 py-2">
-                      <ul className="space-y-1">
+                    <td className="border px-4 py-2 text-center">
+                      {/* Displaying Delivery Boy Username and Email */}
+                      <p className="font-semibold">{order.superStockistdeliveryBoyId?.username}</p>
+                      <p className="text-sm text-gray-500">{order.superStockistdeliveryBoyId?.email}</p>
+
+                      {/* Delivery Status with Color Based on Status */}
+                      <p
+                        className={`${order.
+                          superStockistdeliveryBoyOrderStatus
+                          === "pending"
+                          ? "text-yellow-500"
+                          : order.
+                            superStockistdeliveryBoyOrderStatus
+                            === "delivered"
+                            ? "text-purple-500"
+                            : order.
+                              superStockistdeliveryBoyOrderStatus
+                              === "canceled"
+                              ? "text-red-500"
+                              : ""
+                          }`}
+                      >
+                        {order.
+                          superStockistdeliveryBoyOrderStatus
+                        }
+                      </p>
+
+                      {/* Display OTP */}
+                      <p className="text-xs text-gray-600">OTP: {order.stockistOtp}</p>
+
+                      {/* Delivery Time with Red Color if Time Exceeded */}
+                      <p
+                        className={`${isTimeExceeded(order.superStockistdeliveryTime) ? "text-red-500" : "text-green-500"
+                          }`}
+                      >
+                        Delivery Time: {new Date(order.superStockistdeliveryTime).toLocaleString()}
+                      </p>
+
+                      {/* Link to Show Delivery Boy Details (Uncomment if Needed) */}
+                      <Link
+                        to={`/DeliveryboyDetails/${order.superStockistdeliveryBoyId?._id}/superstockist`}
+                        className="text-blue-600 hover:text-blue-800 text-sm"
+                      >
+                        Show Delivery Boy Details
+                      </Link>
+                    </td>
+
+
+
+                    <td className="border px-6 py-4 text-center bg-gray-50 hover:bg-gray-100">
+                      {/* Display deliveryBoy's username or a fallback text */}
+                      <div className="font-semibold text-gray-800">
+                        {order.deliveryBoyId?.username || "Not Assigned"}
+                      </div>
+
+                      {/* Display deliveryBoy's email */}
+                      <div className="text-sm text-gray-600">
+                        {order.deliveryBoyId?.email}
+                      </div>
+
+                      <p className="mt-2 text-gray-700">{order.deliveryBoyOrderStatus}</p>
+                      <p
+                        className={`${isTimeExceeded(order.superStockistdeliveryTime) ? "text-red-500" : "text-green-500"
+                          }`}
+                      >
+                        Delivery Time: {new Date(order?.deliveryTime).toLocaleString()}
+                      </p>
+
+                      {/* Conditionally render the 'Show Details' link if deliveryBoyId exists */}
+                      {order.deliveryBoyId && (
+                        <Link
+                          to={`/DeliveryboyDetails/${order.deliveryBoyId._id}/stockist`}
+                          className="mt-3 inline-block text-blue-600 hover:text-blue-800 text-sm font-medium"
+                        >
+                          Show Details
+                        </Link>
+                      )}
+                    </td>
+
+
+
+
+                    <td className="border px-6 py-4">
+                      {/* List of Products with Quantity */}
+                      <ul className="space-y-2">
                         {order.products.map((product, index) => (
-                          <li key={index}>
-                            {product.productNames}
+                          <li key={index} className="flex justify-between items-center text-sm text-gray-700">
+                            <span className="font-semibold">{product.productName}</span>
+                            <span className="text-gray-500">Qty: {product.quantity}</span>
                           </li>
                         ))}
                       </ul>
+
+                      {/* Total Price */}
+                      <p className="mt-4 text-center text-lg font-semibold text-gray-800">
+                        <span className="text-xl">Total Price :</span> ₹{order.totalPrice}
+                      </p>
                     </td>
-                    <td className="border px-4 py-2">{order.totalPrice} rs</td>
-                    <td className="border px-4 py-2">{order.status}</td>
-                    <td className="border px-4 py-2">
-                     
-                      { 
-                    activeTab === 'processing'&& (
-                      <Button color="green" className="mr-2 my-2" onClick={() => openModal(order)}>Assign</Button>
-                    )}
-                     
-                    { 
-                    activeTab === 'confirmed'&& (
-                      <Button color="green" className="mr-2 my-2" onClick={() => openModal(order)}>Re-Assign</Button>
-                    )}
-                     
-                      <Button color="red" onClick={() => handleCancelOrder(order._id)}>Cancel</Button>
+
+
+                    <td className={`border px-4 py-2 ${order.status === "pending"
+                      ? "text-yellow-500"
+                      : order.status === "processing"
+                        ? "text-blue-500"
+                        : order.status === "confirmed"
+                          ? "text-green-500"
+                          : order.status === "delivered"
+                            ? "text-purple-500"
+                            : order.status === "canceled"
+                              ? "text-red-500"
+                              : ""
+                      }`}
+                    >{order.status}</td>
+                    <td className="border px-4 py-2 flex justify-center gap-4 flex-wrap">
+                      {activeTab === "confirmed" && (
+                        <Button
+                          color="green"
+                          className="mr-2 my-2"
+                          onClick={() => openModal(order)}
+                        >
+                          Assign
+                        </Button>
+                      )}
+
+                      {activeTab !== "delivered" &&
+                        activeTab !== "canceled" && (
+                          <Button
+                            color="red"
+                            onClick={() => handleCancelOrder(order._id)}
+                          >
+                            Cancel
+                          </Button>
+                        )}
+                      <Button
+                        className="bg-green-600 text-white shadow hover:bg-green-500"
+                        onClick={() => handleOnclick(order)}
+                      >
+                        Track Order
+                      </Button>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="border px-4 py-2 text-center">No Orders Found</td>
+                  <td colSpan={7} className="border px-4 py-2 text-center">
+                    No Orders Found
+                  </td>
                 </tr>
               )}
             </tbody>
@@ -227,19 +390,34 @@ function DeliveryBoyHomePage() {
 
         {/* Pagination Controls */}
         <div className="my-4 flex justify-center items-center gap-4 ">
-         
-         
-            <Button disabled={currentPage === 1} onClick={() => handlePageChange(currentPage - 1)} >Previous</Button>
-            <div>
-            <p>Page {currentPage} of {totalPages}</p>
+          <Button
+            disabled={currentPage === 1}
+            onClick={() => handlePageChange(currentPage - 1)}
+          >
+            Previous
+          </Button>
+          <div>
+            <p>
+              Page {currentPage} of {totalPages}
+            </p>
           </div>
-            <Button disabled={currentPage === totalPages} onClick={() => handlePageChange(currentPage + 1)}>Next</Button>
-         
+          <Button
+            disabled={currentPage === totalPages}
+            onClick={() => handlePageChange(currentPage + 1)}
+          >
+            Next
+          </Button>
         </div>
       </div>
 
       {/* Modal for assigning orders */}
-      {isModalOpen && <AssignModal order={selectedOrder} setIsModalOpen={setIsModalOpen} fetchData={fetchData} />}
+      {isModalOpen && (
+        <AssignModal
+          order={selectedOrder}
+          setIsModalOpen={setIsModalOpen}
+          fetchData={fetchData}
+        />
+      )}
     </div>
   );
 }

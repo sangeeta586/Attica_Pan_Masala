@@ -1,5 +1,5 @@
 const asyncHandler = require("express-async-handler");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const Executives = require("../models/stockistModel");
 
@@ -24,6 +24,7 @@ const registerUser = asyncHandler(async (req, resp) => {
     city,
     address,
     pinCode,
+    selectedSuperStockist,
   } = req.body;
   if (password !== confirmPassword) {
     resp.status(400);
@@ -71,6 +72,7 @@ const registerUser = asyncHandler(async (req, resp) => {
     city,
     address,
     pinCode,
+    superstockist: selectedSuperStockist,
   });
   console.log(`Executive User created ${executive}`);
   if (executive) {
@@ -142,9 +144,139 @@ const getStateCity = asyncHandler(async (req, resp) => {
   resp.status(200).json({ state: executive.state, city: executive.city });
 });
 
+const getUserDetailsByEmail = async (req, res) => {
+  const { email } = req.body; // Get the email from the request params
+
+  if (!email) {
+    return res.status(400).json({ message: "Email is required" });
+  }
+
+  try {
+    // Query the database for the user by email and populate the necessary fields
+    const user = await Executives.findOne({ email }).populate("superstockist"); // Make sure 'superstockist' is the correct field to populate
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Return the user details as a response
+    res.status(200).json(user);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 const GetAllUser = asyncHandler(async (req, resp) => {
   const getAllUser = await Executives.find();
   resp.status(200).json(getAllUser);
+});
+
+const getStockistBySuperByID = asyncHandler(async (req, res) => {
+  try {
+    const superStockistId = req.params.id;
+
+    // Convert superStockistId to ObjectId if it's not already an ObjectId
+    const ObjectId = require("mongoose").Types.ObjectId;
+    if (!ObjectId.isValid(superStockistId)) {
+      return res.status(400).json({ message: "Invalid superStockistId" });
+    }
+
+    // Fetch stockists based on superStockistId
+    const stockists = await Executives.find({
+      superStockistId: new ObjectId(superStockistId),
+    });
+
+    // Check if stockists exist for the given ID
+    if (!stockists || stockists.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No stockists found for the given superStockistId." });
+    }
+
+    // Send the found stockists as a response
+    res.status(200).json(stockists);
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ message: "Error fetching stockists", error: error.message });
+  }
+});
+
+// @desc Update an executive's details
+// @route PUT /api/users/update/:id
+// @access private
+
+const updateUser = asyncHandler(async (req, resp) => {
+  const { id } = req.params;
+  const {
+    username,
+    email,
+    password,
+    country,
+    state,
+    city,
+    address,
+    pinCode,
+    selectedSuperStockist,
+  } = req.body;
+
+  // Validate password if provided
+  if (password && !validatePassword(password)) {
+    resp.status(400);
+    throw new Error("Password must be between 8 and 20 characters long.");
+  }
+
+  // Find the executive by id
+  const executive = await Executives.findById(id);
+  if (!executive) {
+    resp.status(404);
+    throw new Error("Executive not found.");
+  }
+
+  // Update fields if provided
+  if (username) executive.username = username;
+  if (email) executive.email = email;
+  if (password) executive.password = await bcrypt.hash(password, 10); // Hash password if it's being updated
+  if (country) executive.country = country;
+  if (state) executive.state = state;
+  if (city) executive.city = city;
+  if (address) executive.address = address;
+  if (pinCode) executive.pinCode = pinCode;
+  if (selectedSuperStockist) executive.superStockistId = selectedSuperStockist;
+
+  // Save the updated executive data
+  const updatedExecutive = await executive.save();
+
+  resp.status(200).json({
+    message: "Executive updated successfully",
+    updatedExecutive: {
+      _id: updatedExecutive.id,
+      username: updatedExecutive.username,
+      email: updatedExecutive.email,
+    },
+  });
+});
+
+// @desc Delete an executive's record
+// @route DELETE /api/users/delete/:id
+// @access private
+
+const deleteUser = asyncHandler(async (req, resp) => {
+  const { id } = req.params;
+
+  // Find the executive by id
+  const executive = await Executives.findById(id);
+  if (!executive) {
+    resp.status(404).json({ message: "Executive not found." }); // Send response on not found
+    return; // Exit early after sending the response
+  }
+
+  // Delete the executive
+  await executive.deleteOne(); // or executive.remove() if using Mongoose 4.x
+
+  resp.status(200).json({ message: "Executive deleted successfully" });
 });
 
 module.exports = {
@@ -153,4 +285,8 @@ module.exports = {
   currentUser,
   getStateCity,
   GetAllUser,
+  getUserDetailsByEmail,
+  getStockistBySuperByID,
+  updateUser,
+  deleteUser,
 };

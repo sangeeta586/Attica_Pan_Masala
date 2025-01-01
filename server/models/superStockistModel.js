@@ -20,6 +20,12 @@ const superStockistSchema = new mongoose.Schema(
       type: String,
       required: [true, "Please add the user password"],
     },
+    phoneNo: {
+      type: String,
+      required: [true, "Please add the user phone number"],
+      unique: [true, "Phone number already registered"],
+      
+    },
     country: {
       type: String,
       required: true,

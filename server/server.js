@@ -34,9 +34,22 @@ const panShopLoginRoutes = require("./routes/panShopOwnerRoutes");
 const sosRoutes = require("./routes/sosRoutes");
 const sosAlertRoutes = require("./routes/SosAlertRouters");
 const adminRoute = require("./routes/adminRoute");
+const superstockistDeliveryBoys = require("./routes/SuperStockistDeveliveyBoyRouter");
+const productEcomm = require("./routes/productEommRoutes");
 
-const productEcomm = require("./routes/productEommRoutes")
-const path = require('path')
+const fieldManagerLogin = require("./routes/fieldManager/fieldManagerRoute");
+const inspectionShopRoutes = require("./routes/fieldManager/inspectionShopRoute");
+
+const AreaSealMangerRoute = require("./routes/AreaSealMangerRouter");
+
+const areaSellManagerLocation = require("./routes/AreaManagerLocationRoute");
+const fieldManagerLocation = require("./routes/fieldManager/FieldManagerLocation");
+
+const showCaseRoute = require("./routes/fieldManager/ShowCaseRoutes");
+
+const vendorNotIntrested = require("./routes/fieldManager/VendorNotIntrestedRoutes");
+
+const path = require("path");
 
 // Initialize the Database
 connectDb();
@@ -47,7 +60,7 @@ const port = process.env.PORT || 5000;
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Define Routes
 app.use("/api/administrators", administratorRoutes);
@@ -79,10 +92,22 @@ app.use("/api/sosAlert", sosAlertRoutes);
 app.use("/api/location", locationRoutes);
 // app.use("/api/qrGeneraterBoy", require("./routes/qrGeneraterBoyRoutes"));
 app.use("/api/panShopOwner", require("./routes/PanShopOwnerRouter"));
-app.use("/api/admin",adminRoute)
+app.use("/api/admin", adminRoute);
 
-app.use("/api/producteomm" , productEcomm)
+app.use("/api/producteomm", productEcomm);
 
+app.use("/api/superStockist/develiveyBoy", superstockistDeliveryBoys);
+
+app.use("/api/fieldManager", fieldManagerLogin);
+
+app.use("/api/inspectionShop", inspectionShopRoutes);
+
+app.use("/api/areaSealManger", AreaSealMangerRoute);
+
+app.use("/api/areaManagerLocation", areaSellManagerLocation);
+app.use("/api/filedManagerLocation", fieldManagerLocation);
+app.use("/api/showCase", showCaseRoute);
+app.use("/api/vendornotIntrested", vendorNotIntrested);
 
 // Error Handler Middleware
 app.use(errorHandler);

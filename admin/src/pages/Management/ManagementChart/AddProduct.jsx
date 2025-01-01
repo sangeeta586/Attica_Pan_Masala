@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ManagementSidebar from '../ManagementSidebar';
 import axios from 'axios';
 import { BASE_URL } from '../../../constants';
+import ManagementSideBarModal from './ManagementSideBarModal';
 
 const AddProduct = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -11,6 +12,7 @@ const AddProduct = () => {
   const [image, setImage] = useState(null);
   const [products, setProducts] = useState([]);
   const [updateProductId, setUpdateProductId] = useState('');
+  const [searchQuery, setSearchQuery] = useState(''); // State for search query
 
   const handleToggleModal = () => {
     setIsModalOpen(!isModalOpen);
@@ -41,7 +43,7 @@ const AddProduct = () => {
     formData.append('title', productName);
     formData.append('description', productDescription);
     formData.append('price', price);
-    
+
     if (image) {
       formData.append('file', image); // Include file only if selected
     }
@@ -86,12 +88,10 @@ const AddProduct = () => {
     }
   };
 
-
-  const handleDelete = async(id) => {
-
+  const handleDelete = async (id) => {
     const confirmDelete = window.confirm('Are you sure you want to delete this product');
 
-    if(confirmDelete){
+    if (confirmDelete) {
       try {
         await axios.delete(`${BASE_URL}/api/producteomm/${id}`);
         console.log('Product deleted successfully');
@@ -100,28 +100,43 @@ const AddProduct = () => {
         console.error('Error deleting product:', error);
       }
     }
-    // else do nothing, user didn't confirm deletion
-    
+  };
 
-   
-
-
-
-  }
+  // Filter products based on search query
+  const filteredProducts = products.filter((product) =>
+    product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    product.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <>
-      <div className="background min-h-screen flex">
-        <ManagementSidebar />
+    <div className="flex gap-6 bg-blue-100 w-full">
+     
+        <div className=" hidden md:block lg:block">
+          <ManagementSidebar />
+        </div>
+        <div className="lg:hidden md:hidden block">
+          <ManagementSideBarModal />
+        </div>
 
-        <div className="flex flex-col w-full p-6 ml-40">
+        <div className="lg:ml-80 md:ml-40 font-serif w-full lg:p-10 md:p-5 ">
           <div className="flex justify-end mb-6">
             <button
               onClick={handleToggleModal}
-              className="text-3xl font-bold bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded"
+              className="text-xl font-bold border-2 border-blue-600 text-blue-600 py-2 px-4 rounded"
             >
               Add Product
             </button>
+          </div>
+
+          {/* Search bar */}
+          <div className="mb-6">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              placeholder="Search by product name or description"
+            />
           </div>
 
           {isModalOpen && (
@@ -210,26 +225,32 @@ const AddProduct = () => {
 
           <div className="mt-8">
             <h2 className="text-xl font-bold mb-4">Products</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:ml-56">
-              {products.map((product) => (
-                <div key={product._id} className="border p-4 rounded-lg shadow-lg flex flex-col items-center">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredProducts.map((product) => (
+                <div
+                  key={product._id}
+                  className="border-2 border-blue-500 hover:border-blue-50 p-4 rounded-lg shadow-lg flex flex-col items-center transition-all duration-300 hover:shadow-xl hover:scale-105 hover:bg-gray-50"
+                >
                   <img
                     src={`${BASE_URL}/uploads/${product.image}`} // Assuming image URLs are served from '/uploads' directory
                     alt={product.title}
-                    className="w-full h-40 object-cover mb-4"
+                    className="w-full h-60 object-contain mb-4 transition-all duration-300 hover:scale-105"
                   />
-                  <h3 className="text-lg font-bold">{product.title}</h3>
-                  <p>{product.description}</p>
-                  <p className="text-blue-500 font-semibold mt-2">${product.price}</p>
+                  <h3 className="text-lg font-bold text-center mt-2 transition-all duration-300 hover:text-blue-500">{product.title}</h3>
+                  <p className="text-center text-gray-600 mb-2">{product.description}</p>
+                  <p className="text-blue-500 font-semibold mt-2">₹ {product.price}</p>
 
                   <div className="mt-4 flex space-x-2">
                     <button
-                      className="bg-yellow-500 text-white py-1 px-3 rounded hover:bg-yellow-600"
+                      className="bg-yellow-500 text-white py-1 px-3 rounded hover:bg-yellow-600 transition-all duration-300"
                       onClick={() => handleEdit(product._id)}
                     >
                       Edit
                     </button>
-                    <button className="bg-red-500 text-white py-1 px-3 rounded hover:bg-red-600" onClick={()=>handleDelete(product._id)}>
+                    <button
+                      className="bg-red-500 text-white py-1 px-3 rounded hover:bg-red-600 transition-all duration-300"
+                      onClick={() => handleDelete(product._id)}
+                    >
                       Delete
                     </button>
                   </div>
@@ -237,9 +258,10 @@ const AddProduct = () => {
               ))}
             </div>
           </div>
+
         </div>
-      </div>
-    </>
+    
+    </div>
   );
 };
 

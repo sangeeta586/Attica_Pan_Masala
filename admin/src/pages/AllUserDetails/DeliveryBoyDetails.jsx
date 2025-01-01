@@ -8,8 +8,9 @@ import ManagementSideBarModal from '../Management/ManagementChart/ManagementSide
 import { FaProductHunt } from 'react-icons/fa';
 import { SuperStockistSideBar } from '../SuperStockist/SuperStockistSideBar';
 
-const DeliveryBoyDetails = () => {
-  const [deliveryBoy, setDeliveryBoy] = useState(null);
+
+ const SuperStockistProfile = () => {
+    const [deliveryBoy, setDeliveryBoy] = useState(null);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const { id, name } = useParams();
@@ -182,7 +183,7 @@ const DeliveryBoyDetails = () => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default DeliveryBoyDetails;
+export default SuperStockistProfile;

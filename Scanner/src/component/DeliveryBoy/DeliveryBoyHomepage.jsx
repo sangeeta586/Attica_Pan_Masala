@@ -1,4 +1,4 @@
-import React,{ useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import Box from '@mui/material/Box';
 import BottomNavigation from '@mui/material/BottomNavigation';
@@ -10,19 +10,18 @@ import RecentOrder from './RecentOrder';
 import CompletedOrders from './CompletedOrders';
 import OverdueOrders from './OverdueOrders';
 
-const API_URL= process.env.REACT_APP_API_URL;
-
+const API_URL = process.env.REACT_APP_API_URL;
 
 function Recents() {
-  return <div><RecentOrder/></div>;
+  return <div><RecentOrder /></div>;
 }
 
 function Completed() {
-  return <div><CompletedOrders/></div>;
+  return <div><CompletedOrders /></div>;
 }
 
 function Overdue() {
-  return <div><OverdueOrders/></div>;
+  return <div><OverdueOrders /></div>;
 }
 
 export default function DeliveryBoyHomePage() {
@@ -31,34 +30,41 @@ export default function DeliveryBoyHomePage() {
   const [prevLocation, setPrevLocation] = useState(null);
   const loggedInUserId = localStorage.getItem("CurrentUserId");
 
-  
+  const locationWatchRef = useRef(null);  // Ref to keep track of geolocation watching state
+
   useEffect(() => {
-    const watchId = navigator.geolocation.watchPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
+    // A function to handle location updates
+    const handleLocationChange = async (position) => {
+      const { latitude, longitude } = position.coords;
+
+      try {
+        const response = await axios.get(`https://api.opencagedata.com/geocode/v1/json?key=b5ddfdc0bf0c428e8530c8aeae8ec37e&q=${latitude}+${longitude}&pretty=1&no_annotations=1`);
+        const address = response.data.results[0]?.formatted || "Unknown Address";
         
-        try {
-          const response = await axios.get(`https://api.opencagedata.com/geocode/v1/json?key=b5ddfdc0bf0c428e8530c8aeae8ec37e&q=${latitude}+${longitude}&pretty=1&no_annotations=1`);
-          
-          const address = response.data.results[0]?.formatted || "Unknown Address";
-          
-          setCurrentLocation({
-            latitude,
-            longitude,
-            address
-          });
-        } catch (error) {
-          console.error("Error fetching address:", error);
-        }
-      },
-      (error) => {
-        console.error(error);
+        setCurrentLocation({
+          latitude,
+          longitude,
+          address,
+        });
+      } catch (error) {
+        console.error("Error fetching address:", error);
       }
-    );
-    return () => {
-      navigator.geolocation.clearWatch(watchId);
     };
-  }, [prevLocation]);
+
+    // Start watching location
+    if (!locationWatchRef.current) {
+      locationWatchRef.current = navigator.geolocation.watchPosition(handleLocationChange, (error) => {
+        console.error("Error in geolocation:", error);
+      });
+    }
+
+    return () => {
+      // Cleanup geolocation watch on component unmount
+      if (locationWatchRef.current) {
+        navigator.geolocation.clearWatch(locationWatchRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (currentLocation && JSON.stringify(currentLocation) !== JSON.stringify(prevLocation)) {
@@ -67,7 +73,7 @@ export default function DeliveryBoyHomePage() {
         .post(`${API_URL}/api/location`, {
           deliveryBoysId: loggedInUserId,
           longitude: currentLocation.longitude,
-          latitude: currentLocation.latitude
+          latitude: currentLocation.latitude,
         })
         .then((response) => {
           console.log("Location saved:", response.data);
@@ -75,6 +81,8 @@ export default function DeliveryBoyHomePage() {
         .catch((error) => {
           console.error("Error saving location:", error);
         });
+      
+      setPrevLocation(currentLocation);
     }
   }, [currentLocation, prevLocation, loggedInUserId]);
 
@@ -90,10 +98,8 @@ export default function DeliveryBoyHomePage() {
         return null;
     }
   };
-  
-  return (
 
-      
+  return (
     <Box sx={{ position: 'fixed', left: 0, width: '100%' }}>
       <BottomNavigation
         showLabels
@@ -108,6 +114,5 @@ export default function DeliveryBoyHomePage() {
       </BottomNavigation>
       <Box sx={{ padding: '20px' }}>{getContent(value)}</Box>
     </Box>
-
   );
 }

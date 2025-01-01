@@ -25,7 +25,7 @@ function Login() {
       );
 
       // Store the token in local storage
-      localStorage.setItem("accessToken", res.data.accessToken);
+      localStorage.setItem("token", res.data.accessToken);
       localStorage.setItem("id", res.data.id);
       // console.log("accessToken",accessToken)
       // console.log("res",res.data)

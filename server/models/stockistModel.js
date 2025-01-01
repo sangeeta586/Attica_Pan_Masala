@@ -41,12 +41,17 @@ const stockistSchema = mongoose.Schema(
     pinCode: {
       type: String,
     },
+    superstockist: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "SuperStockist",
+    },
     resetToken: String,
     resetTokenExpiration: Date,
   },
+  
   {
     timestamps: true,
   }
 );
 
-module.exports = mongoose.model("stockist&admin", stockistSchema);
+module.exports = mongoose.model("stockists", stockistSchema);

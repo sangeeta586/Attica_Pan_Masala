@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import React, { useState, useEffect, useRef } from "react";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import { FaRupeeSign } from "react-icons/fa";
 
 const RecentOrder = () => {
@@ -8,28 +8,31 @@ const RecentOrder = () => {
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [otp, setOtp] = useState('');
+  const [otp, setOtp] = useState("");
   const inputRefs = useRef([]);
-  const deliveryEmail = localStorage.getItem('email');
+  const deliveryEmail = localStorage.getItem("email");
+  const id = localStorage.getItem("CurrentUserId");
 
-  const API_URL= process.env.REACT_APP_API_URL;
+  const API_URL = process.env.REACT_APP_API_URL;
 
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/panshop/order`);
+        const response = await fetch(
+          `${API_URL}/api/qrGeneraterBoy/order/${id}`
+        );
+
         if (!response.ok) {
-          throw new Error('Failed to fetch orders');
+          throw new Error("Failed to fetch orders");
         }
         const data = await response.json();
         const now = new Date();
-        const recentOrders = data.filter(order =>
-          order.status === 'pending' && (!order.deliveryTime || new Date(order.deliveryTime) >= now)
+        const recentOrders = data.filter(
+          (order) =>
+            order.status === "confirmed" &&
+            (!order.deliveryTime || new Date(order.deliveryTime) >= now)
         );
-        // Filter orders based on deliveryEmail
-        const filteredOrders = recentOrders.filter(order => order.assignTo === deliveryEmail);
-        setOrders(filteredOrders);
-        console.log('Orders', filteredOrders)
+        setOrders(recentOrders);
       } catch (error) {
         setError(error.message);
         toast.error(error.message);
@@ -40,13 +43,14 @@ const RecentOrder = () => {
   }, [deliveryEmail]);
 
   const handleOTPSubmit = (order) => {
+    console.log("Order selected:", order);
     setSelectedOrder(order);
     setShowModal(true);
   };
 
   const closeModal = () => {
     setShowModal(false);
-    setOtp('');
+    setOtp("");
   };
 
   const handleInputChange = (index, value, keyCode) => {
@@ -55,32 +59,37 @@ const RecentOrder = () => {
     }
     if (!value && index > 0 && keyCode === 8) {
       inputRefs.current[index - 1].focus();
-      inputRefs.current[index - 1].value = '';
+      inputRefs.current[index - 1].value = "";
     }
-    const newOtp = otp.split('');
+    const newOtp = otp.split("");
     newOtp[index] = value;
-    setOtp(newOtp.join(''));
+    setOtp(newOtp.join(""));
   };
 
   const submitOtp = async (e) => {
     e.preventDefault();
     try {
       const otpNumber = Number(otp);
-      const response = await fetch(`${API_URL}/api/panshop/order/${selectedOrder._id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ otp: otpNumber })
-      });
+      const response = await fetch(
+        `${API_URL}/api/panshop/order/${selectedOrder._id}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ otp: otpNumber }),
+        }
+      );
 
       if (!response.ok) {
-        throw new Error('OTP did not match the data');
+        throw new Error("OTP did not match the data");
       }
 
       const data = await response.json();
-      toast.success('OTP matched and order status updated!');
+      toast.success("OTP matched and order status updated!");
       closeModal();
       setOrders((prevOrders) =>
-        prevOrders.map(order => order._id === data.order._id ? data.order : order)
+        prevOrders.map((order) =>
+          order._id === data.order._id ? data.order : order
+        )
       );
     } catch (error) {
       toast.error(error.message);
@@ -90,65 +99,124 @@ const RecentOrder = () => {
   return (
     <div className="container mx-auto overflow-y-auto h-screen p-4 md:p-10">
       <ToastContainer />
-      <h1 className="text-3xl font-bold mb-6 text-center underline text-blue-600">Recent Orders</h1>
+      <h1 className="text-3xl font-bold mb-6 text-center underline text-blue-600">
+        Recent Orders
+      </h1>
       {error && <p className="text-red-500 text-center">Error: {error}</p>}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {orders.map(order => (
-          <div key={order._id} className="border border-gray-300 p-4 rounded bg-gradient-to-r bg-[#e8f0fe] shadow-lg">
-            <h2 className="text-xl font-bold mb-4 text-blue-700 border-b-2 border-blue-600 pb-2">Order ID: {order._id}</h2>
-            <div className="grid grid-cols-[auto,1fr] gap-x-4 gap-y-2 items-start">
-              <p className="font-semibold text-gray-700 text-right border-r-2 border-blue-600 pr-4">Pan Shop Owner Name:</p>
-              <p className="text-gray-800">{order.panShopOwnerName}</p>
-              <p className="font-semibold text-gray-700 text-right border-r-2 border-blue-600 pr-4">Pan Shop Owner Address:</p>
-              <p className="text-gray-800">{order.panShopOwneraddress}</p>
-              <p className="font-semibold text-gray-700 text-right border-r-2 border-blue-600 pr-4">Status:</p>
-              <p className="text-gray-800">{order.status}</p>
-              <p className="font-semibold text-gray-700 text-right border-r-2 border-blue-600 pr-4">Delivery Time:</p>
-              <p className="text-gray-800">{order.deliveryTime}</p>
-              <p className="font-semibold text-gray-700 text-right border-r-2 border-blue-600 pr-4">Products:</p>
-              <ul className="list-disc pl-5 text-gray-800">
-                {order.products.map(product => (
-                  <li key={product._id} className="mb-1">
-                    {product.productNames} - Quantity: {product.quantity} - Price:  <FaRupeeSign />{product.price}
-                  </li>
-                ))}
-              </ul>
-              <p className="font-semibold text-gray-700 text-right border-r-2 border-blue-600 pr-4">Total Price:</p>
-              <p className="text-gray-800 font-bold"><FaRupeeSign />{order.totalPrice}</p>
-            </div>
-            <div className="mt-4 text-right">
-              <button className="bg-blue-500 text-white p-2 rounded hover:bg-blue-700" onClick={() => handleOTPSubmit(order)}>Submit OTP</button>
-            </div>
-          </div>
-        ))}
+      <div className="overflow-x-auto">
+        {/* Responsive Table */}
+        <div className="hidden sm:block">
+          <table className="table-auto w-full border-collapse border border-gray-300 bg-white shadow-md">
+            <thead className="bg-blue-600 text-white">
+              <tr>
+                <th className="border border-gray-300 px-4 py-2">Order ID</th>
+                <th className="border border-gray-300 px-4 py-2">Owner Name</th>
+                <th className="border border-gray-300 px-4 py-2">
+                  Owner Address
+                </th>
+                <th className="border border-gray-300 px-4 py-2">Status</th>
+                <th className="border border-gray-300 px-4 py-2">
+                  Delivery Time
+                </th>
+                <th className="border border-gray-300 px-4 py-2">Products</th>
+                <th className="border border-gray-300 px-4 py-2">
+                  Total Price
+                </th>
+                <th className="border border-gray-300 px-4 py-2">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {orders.map((order) => (
+                <tr key={order._id} className="hover:bg-gray-100">
+                  <td className="border border-gray-300 px-4 py-2">
+                    {order._id}
+                  </td>
+                  <td className="border border-gray-300 px-4 py-2">
+                    {order.panShopOwnerName}
+                  </td>
+                  <td className="border border-gray-300 px-4 py-2">
+                    {order.panShopOwneraddress}
+                  </td>
+                  <td className="border border-gray-300 px-4 py-2">
+                    {order.status === "confirmed" ||
+                    order.status === "delivered"
+                      ? "Pending"
+                      : order.status}
+                  </td>
+                  <td className="border border-gray-300 px-4 py-2">
+                    {order.deliveryTime || "N/A"}
+                  </td>
+                  <td className="border border-gray-300 px-4 py-2">
+                    <ul className="list-disc pl-4">
+                      {order.products.map((product) => (
+                        <li key={product._id}>
+                          {product.productName} - Qty: {product.quantity} -
+                          Price: <FaRupeeSign className="inline" />
+                          {product.price}
+                        </li>
+                      ))}
+                    </ul>
+                  </td>
+                  <td className="border border-gray-300 px-4 py-2 font-bold">
+                    <FaRupeeSign className="inline" />
+                    {order.totalPrice}
+                  </td>
+                  <td className="border border-gray-300 px-4 py-2 text-center">
+                    <button
+                      className="bg-blue-500 text-white p-2 rounded hover:bg-blue-700"
+                      onClick={() => handleOTPSubmit(order)}
+                    >
+                      Submit OTP
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
+
+      {/* OTP Modal */}
       {showModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 ">
-          <div className="bg-[#e8f0fe]  p-6 md:p-12 shadow-lg rounded ">
-            <h2 className="text-xl font-bold mb-4 text-center text-blue-700">Enter OTP</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded shadow-lg w-full max-w-sm">
+            <h2 className="text-xl font-bold mb-4 text-blue-600 text-center">
+              Enter OTP for Order ID: {selectedOrder?._id}
+            </h2>
             <form onSubmit={submitOtp}>
-              <div className="flex space-x-4 justify-center">
-                {[0, 1, 2, 3].map(index => (
-                  <input
-                    key={index}
-                    ref={el => (inputRefs.current[index] = el)}
-                    type="text"
-                    maxLength="1"
-                    className="border rounded w-12 h-12 text-center text-gray-800 "
-                    onChange={e => handleInputChange(index, e.target.value, e.keyCode)}
-                    onKeyDown={e => handleInputChange(index, e.target.value, e.keyCode)}
-                  />
-                ))}
+              <div className="flex space-x-2 justify-center">
+                {Array(4)
+                  .fill("")
+                  .map((_, index) => (
+                    <input
+                      key={index}
+                      ref={(el) => (inputRefs.current[index] = el)}
+                      type="text"
+                      maxLength={1}
+                      className="w-10 h-10 text-center border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      onChange={(e) =>
+                        handleInputChange(
+                          index,
+                          e.target.value,
+                          e.nativeEvent.keyCode
+                        )
+                      }
+                    />
+                  ))}
               </div>
-              <div className="flex justify-center mt-8">
+              <div className="mt-6 flex justify-end space-x-4">
+                <button
+                  type="button"
+                  className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-700"
+                  onClick={closeModal}
+                >
+                  Cancel
+                </button>
                 <button
                   type="submit"
-                  className="bg-blue-600 text-white px-4 py-2 rounded mr-4 hover:bg-green-700"
+                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700"
                 >
                   Submit
-                </button>
-                <button type="button" className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-700" onClick={closeModal}>
-                  Close
                 </button>
               </div>
             </form>

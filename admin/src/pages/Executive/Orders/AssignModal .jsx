@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { BASE_URL } from "../../../constants";
+import axios from "axios";
 
 const AssignModal = ({ order, setIsModalOpen, fetchData }) => {
   const [formData, setFormData] = useState({
@@ -82,26 +83,18 @@ const AssignModal = ({ order, setIsModalOpen, fetchData }) => {
       const dataToSubmit = {
         deliverBoyId: formData.deliveryBoyId,
         deliveryTime: formData.deliveryTime,
+        deliveryBoyOrderStatus:"pending",
+
       };
 
-      const response = await fetch(
-        `${BASE_URL}/api/panshop/order/assignedToDeliverBoy/${order._id}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(dataToSubmit),
-        }
-      );
+      const response = await axios.patch(
+        `${BASE_URL}/api/panshop/order/assignedToDeliverBoy/${order._id}`,dataToSubmit);
 
-      if (response.ok) {
-        console.log("Data submitted successfully");
+      
         setIsModalOpen(false);
-        fetchData(); // Refresh the data after successful update
-      } else {
-        console.error("Failed to submit data");
-      }
+        fetchData(); 
+      
+      
     } catch (error) {
       console.error("Error submitting data:", error);
     }
@@ -114,8 +107,8 @@ const AssignModal = ({ order, setIsModalOpen, fetchData }) => {
   return (
     <div className="fixed top-0 left-0 w-full h-full flex justify-center items-center">
       <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50"></div>
-      <div className="bg-[#f5f0f0] p-6 rounded-xl relative">
-        <h2 className="text-3xl font-semibold mb-6 text-center underline text-[#1e40af]">
+      <div className="bg-[#7da6fd] p-6 rounded-xl relative">
+        <h2 className="text-3xl font-semibold mb-6 text-center underline text-[#7393fd]">
           Order Details
         </h2>
 
@@ -134,16 +127,20 @@ const AssignModal = ({ order, setIsModalOpen, fetchData }) => {
           </p>
         </div>
 
-        <div className="mb-6 border border-blue-600 p-4">
-          <p className="text-lg font-semibold">Products:</p>
+        <div className="mt-4 border border-blue-600 p-4 my-4">
+          <p className="text-lg font-semibold text-center">Products:</p>
           {order.products.map((product, index) => (
             <div key={index} className="flex justify-between">
-              <p>{product.productNames}</p>
+              <p>{product.productName}</p>
               <p>Quantity: {product.quantity}</p>
-              <p>Price: rs{product.price}</p>
+              <p>Price: ₹{product.price}</p>
             </div>
           ))}
+          <p className="text-[#000000] text-xl font-bold text-right">
+            Total Price: ₹{order.totalPrice}
+          </p>
         </div>
+
 
         {/* Search Bar */}
         <input

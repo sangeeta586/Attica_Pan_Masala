@@ -6,7 +6,13 @@ const {
     getPanShopOrder,
     // getTodays24HoursSell
     deletePanShopOrderById,
-    assignToOrderToDeliverBoy
+    assignToOrderToDeliverBoy,
+    matchOtp,
+    cancelOrder,
+    assignToOrderToSuperStockistDeliverBoy,
+    getSuperStockistDeliveryBoy,
+    updateOrderStatusfromSuperStockistDeliveryBoy,
+    cancleOrderFromTheSuperStockistDeliveyBoy
 } = require("../controllers/panShopOrderController");
 
 const router = express.Router();
@@ -20,8 +26,24 @@ router.route("/:id")
     .patch(assignedToorderStockitAndSuperStockit)
     .delete(deletePanShopOrderById)
 
+ // Add routes for super stockist delivery boy's routes here
+router.route("/updateOrderStatus/:id").patch(updateOrderStatusfromSuperStockistDeliveryBoy)
+
+
 
 router.route("/assignedToDeliverBoy/:id").patch(assignToOrderToDeliverBoy);
+
+router.route("/assignedTosuperStockistDeliverBoy/:id").patch(assignToOrderToSuperStockistDeliverBoy)
+
+router.route("/:id").post(matchOtp);
+
+
+router.route("/cancel/:orderId").put(cancelOrder)
+
+router.route("/getAllOrdersuperStockistDeliverBoybyId/:id").get(getSuperStockistDeliveryBoy)
+
+router.route("/cancleOrderFromTheSuperStockistDeliveyBoy/:id").patch(cancleOrderFromTheSuperStockistDeliveyBoy)
+
 
 
 

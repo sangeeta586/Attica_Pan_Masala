@@ -2,10 +2,20 @@ const mongoose = require('mongoose');
 
 // Schema for individual products
 const productSchema = new mongoose.Schema({
-    productNames: {
+    productName: {
         type: String,
         required: [true, 'Please add at least one product name'],
     },
+    productId:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref:"ProductEomm"
+       
+    },
+    image:{
+        type: String,
+       
+    },
+
     quantity: {
         type: Number,
         required: [true, 'Please add the product quantity'],
@@ -60,17 +70,52 @@ const PanShopOrderSchema = new mongoose.Schema({
         enum: ["pending", "processing", "confirmed", "delivered", "canceled"],
         default: "pending",
     },
+    superStockistStatus:{
+        type: String,
+        enum: ["pending", "delivered", "canceled"],
+        default: "pending",
+    },
+    stockistStatus:{
+        type: String,
+        enum: ["pending", "confirmed", "shipped", "delivered"],
+        default: "pending"
+    },
+    deliveryBoyOrderStatus:{
+        type: String,
+        enum: ["pending", "delivered", "canceled"],
+        default: "pending",
+    },
+    
+
     otp: {
         type: Number,
         default: null, // Set default to null instead of an empty string
     },
-    // Modify assignTo to include both name and id
+    stockistOtp:{
+        type: Number,
+        default: null, // Set default to null instead of an empty string
+    },
     deliveryBoyId: {
         type: mongoose.Schema.Types.ObjectId, // ObjectId reference to a User model
         ref: 'deliveryboysdetails',
        
     },
-    
+    superStockistdeliveryBoyId: {
+        type: mongoose.Schema.Types.ObjectId, // ObjectId reference to a User model
+        ref: 'SuperstockistdeliveryBoys',
+       
+    },
+    superStockistdeliveryBoyOrderStatus: { 
+        type: String,
+        enum: ["pending", "delivered", "canceled"],
+        default: "pending",
+    },
+    superStockistdeliveryTime:{
+        type: String,
+        default: '', // Consider changing to Date if applicable
+    },
+
+
     deliveryTime: {
         type: String,
         default: '', // Consider changing to Date if applicable

@@ -50,9 +50,9 @@ const deliveryBoysDetailsSchema = mongoose.Schema(
       errorMessage: "Please add the user state",
     },
 
-    stockistEmailId: {
-      type: String,
-      ref: "executives",
+    stockist: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "stockist",
     },
   },
   {

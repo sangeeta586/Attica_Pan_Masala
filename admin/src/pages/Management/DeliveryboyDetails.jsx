@@ -5,6 +5,7 @@ import RegisterForm from "./Register/RegisterForm";
 import ManagementSideBarModal from "./ManagementChart/ManagementSideBarModal";
 import { useNavigate } from "react-router-dom";
 import { BASE_URL } from "../../constants";
+import Swal from "sweetalert2";
 
 const DeliveryboyDetails = () => {
   const [deliveryBoys, setDeliveryBoys] = useState([]);
@@ -14,6 +15,7 @@ const DeliveryboyDetails = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
   const [searchQuery, setSearchQuery] = useState(""); // New state for search query
+  const [selectDeliveryboy, setSelectDeliveryboy] = useState();
 
   const navigate = useNavigate();
 
@@ -83,6 +85,45 @@ const DeliveryboyDetails = () => {
     if (currentPage > 1) setCurrentPage(currentPage - 1);
   };
 
+  const handleUpdate = (deliveryBoy) => {
+    setSelectDeliveryboy(deliveryBoy);
+    setShowModal(true);
+  };
+
+  const handleDeleteClick = async (id) => {
+    const confirmResult = await Swal.fire({
+      title: "Are you sure?",
+      text: "This action cannot be undone!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "No, cancel!",
+      buttonsStyling: false, // Disable SweetAlert2 default button styling
+      customClass: {
+        confirmButton: "bg-red-500 text-white px-4 py-2 rounded-md mx-2", // Add margin to the button
+        cancelButton: "bg-gray-500 text-white px-4 py-2 rounded-md mx-2" // Add margin to the button
+      }
+    });
+
+    if (confirmResult.isConfirmed) {
+      try {
+        const response = await fetch(`${BASE_URL}/api/qrGeneraterBoy/${id}`, {
+          method: "DELETE",
+        });
+        if (response.ok) {
+          fetchDeliveryBoys();
+          Swal.fire("Deleted!", "Delivery Boy has been deleted.", "success");
+        } else {
+          throw new Error("Failed to delete delivery boy");
+        }
+      } catch (error) {
+        console.error("Error deleting delivery boy:", error);
+        Swal.fire("Error", "Could not delete delivery boy", "error");
+      }
+    }
+  };
+
+
   return (
     <div className="flex gap-6 bg-[#dbeafe] w-full">
       <div className="h-screen md:block lg:block hidden">
@@ -110,7 +151,7 @@ const DeliveryboyDetails = () => {
           <div className="fixed inset-0 z-50 flex items-center justify-center">
             <div className="absolute inset-0 bg-black opacity-50"></div>
             <div className="z-50 bg-white p-8 rounded-lg shadow-lg">
-              <RegisterForm onClose={handleCloseModal} />
+              <RegisterForm onClose={handleCloseModal} selectDeliveryboy={selectDeliveryboy} />
             </div>
           </div>
         )}
@@ -164,11 +205,33 @@ const DeliveryboyDetails = () => {
                   {currentDeliveryBoys.map((deliveryBoy) => (
                     <tr key={deliveryBoy._id} className="bg-gray-200 border-b-2 border-blue-200">
                       <td className="px-2 py-4 md:text-lg text-xs text-left whitespace-nowrap overflow-hidden overflow-ellipsis border-r-2 border-white">{deliveryBoy.username}</td>
-                      <td className="px-2 py-4 md:text-lg text-xs text-left whitespace-nowrap overflow-hidden overflow-ellipsis border-r-2 border-white">{deliveryBoy.email}</td>
+                      <td className="px-4 py-3 md:text-base text-sm text-left whitespace-nowrap overflow-hidden overflow-ellipsis border-r-2 border-gray-300">
+                        <span className="block font-medium text-black">{deliveryBoy.email}</span>
+                        <span className="block text-gray-600">{deliveryBoy.phoneNo}</span>
+                      </td>
+
                       <td className="px-2 py-4 md:text-lg text-xs text-left whitespace-nowrap overflow-hidden overflow-ellipsis border-r-2 border-white">{deliveryBoy.state}</td>
-                      <td className="px-2 py-4 md:text-lg text-xs text-left whitespace-nowrap overflow-hidden overflow-ellipsis">{deliveryBoy.address}</td>
-                      <td className="px-2 py-4 md:text-lg text-xs text-left whitespace-nowrap overflow-hidden overflow-ellipsis text-[#1e40af] hover:text-black hover:text-xl">
-                        <button onClick={() => resetHandler(deliveryBoy._id)}>Reset Password</button>
+                      <td className="px-4 py-3 md:text-base text-sm text-left whitespace-nowrap overflow-hidden overflow-ellipsis border-r-2 border-gray-300">
+                        <span className="block">{deliveryBoy.address}</span>
+                        <span className="block">{deliveryBoy.city}, {deliveryBoy.pinCode}</span>
+                      </td>
+
+                      <td className="px-2 py-4 md:text-lg text-xs text-left whitespace-nowrap overflow-hidden overflow-ellipsis border-r-2 border-white">
+                        <Button onClick={() => handleUpdate(deliveryBoy)} className="bg-blue-500 text-white p-2 rounded">
+                          Update
+                        </Button>
+                        <Button
+                          onClick={() => handleDeleteClick(deliveryBoy._id)}
+                          className="bg-red-500 text-white p-2 rounded ml-2"
+                        >
+                          Delete
+                        </Button>
+                        <Button
+                          onClick={() => resetHandler(deliveryBoy._id)}
+                          className="bg-orange-500 text-white p-2 rounded ml-2"
+                        >
+                          Reset Password
+                        </Button>
                       </td>
                     </tr>
                   ))}
@@ -176,29 +239,17 @@ const DeliveryboyDetails = () => {
               </table>
             </div>
 
-            {/* Pagination Controls */}
-            
-          </div>
-        </div>
-        <div className="flex justify-between items-center gap-10 my-4 ">
-              <button
-                onClick={handlePrevPage}
-                disabled={currentPage === 1}
-                className={`p-2 border rounded ${currentPage === 1 ? "opacity-50 cursor-not-allowed" : " bg-black"}`}
-              >
+            <div className="flex justify-between mt-4">
+              <button onClick={handlePrevPage} className="p-2 bg-gray-300 rounded">
                 Previous
               </button>
-              <span>
-                Page {currentPage} of {totalPages}
-              </span>
-              <button
-                onClick={handleNextPage}
-                disabled={currentPage === totalPages}
-                className={`p-2 border rounded ${currentPage === totalPages ? "opacity-50 cursor-not-allowed" : ""}`}
-              >
+              <span className="self-center">{currentPage} of {totalPages}</span>
+              <button onClick={handleNextPage} className="p-2 bg-gray-300 rounded">
                 Next
               </button>
             </div>
+          </div>
+        </div>
       </div>
     </div>
   );

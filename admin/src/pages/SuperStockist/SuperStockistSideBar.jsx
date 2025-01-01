@@ -3,11 +3,14 @@ import "./SuperStockistSideBar.css"; // Assuming you have a CSS file for styling
 import { RxCross1 } from "react-icons/rx";
 import "../../Styles/Styles.css";
 import logo from "../../assets/logo.png";
-import { HiTemplate } from "react-icons/hi";
-import { FiLogOut, FiUser } from "react-icons/fi"; // Icons for Logout and Profile
+
 import { MdOutlineDeliveryDining, MdDashboard } from "react-icons/md"; // Icons for Delivery and Dashboard
 import { useNavigate, useLocation } from "react-router-dom"; // Add useLocation for active route
 import { VscThreeBars } from "react-icons/vsc";
+import { FiLogOut, FiUser } from "react-icons/fi"; // Icons for Logout and Profile
+import { HiTemplate } from "react-icons/hi"; // Import HiTemplate
+
+
 
 export const SuperStockistSideBar = () => {
   const [showSidebar, setShowSidebar] = useState(false);
@@ -21,8 +24,8 @@ export const SuperStockistSideBar = () => {
 
   const handlelogOut = () => {
     localStorage.clear();
-    navigate('/');
-  }
+    navigate("/");
+  };
 
   return (
     <>
@@ -34,17 +37,41 @@ export const SuperStockistSideBar = () => {
           />
         </div>
 
-        <div className={`sidebar-container ${showSidebar ? 'show-sidebar' : ''} flex-col h-full transition-all duration-300 ease-in-out`}>
+        <div
+          className={`sidebar-container ${
+            showSidebar ? "show-sidebar" : ""
+          } flex-col h-full transition-all duration-300 ease-in-out`}
+        >
           <div className="sidebar-header">
             <RxCross1 className="menu-burger" onClick={toggleSidebar} />
             <img src={logo} alt="Logo" />
           </div>
 
           <ul className="sidebar-menu mx-4 flex flex-col flex-grow mt-6 Navlist">
-            <NavItem href="/SuperStockist-Order" icon={<MdDashboard style={{ color: "#66cccc", fontSize: "2rem" }} />} text="Dashboard" activeRoute={location.pathname} />
-            <NavItem href="#" icon={<HiTemplate style={{ color: "#66cccc", fontSize: "2rem" }} />} text="My Order" activeRoute={location.pathname} /> 
-            <NavItem href="#" icon={<MdOutlineDeliveryDining style={{ color: "#66cccc", fontSize: "2rem" }} />} text="Delivery Details" activeRoute={location.pathname} />
-            <NavItem href={"#"} icon={<FiLogOut style={{ color: "#66cccc", fontSize: "2rem" }} />} text="Logout" onClick={handlelogOut} isButton />
+            <NavItem
+              href="/SuperStockist-Order"
+              icon={
+                <MdDashboard style={{ color: "#66cccc", fontSize: "2rem" }} />
+              }
+              text="Dashboard"
+              activeRoute={location.pathname}
+            />
+            {/* <NavItem href="/superStockitDetailsDeliveryboyDetails" icon={<HiTemplate style={{ color: "#66cccc", fontSize: "2rem" }} />} text="My Order" activeRoute={location.pathname} />   */}
+             <NavItem href="/superStockitDetailsDeliveryboyDetails" icon={<MdOutlineDeliveryDining style={{ color: "#66cccc", fontSize: "2rem" }} />} text="Delivery Details" activeRoute={location.pathname} />
+            <NavItem
+              href={"#"}
+              icon={
+                <FiLogOut
+                  style={{
+                    color: "#66cccc",
+                    fontSize: "2rem",
+                  }}
+                />
+              }
+              text="Logout"
+              onClick={handlelogOut}
+              isButton
+            />
           </ul>
         </div>
       </div>
@@ -52,7 +79,14 @@ export const SuperStockistSideBar = () => {
   );
 };
 
-const NavItem = ({ href, icon, text, onClick, isButton = false, activeRoute }) => {
+const NavItem = ({
+  href,
+  icon,
+  text,
+  onClick,
+  isButton = false,
+  activeRoute,
+}) => {
   const isActive = href === activeRoute; // Compare the current path with the href
 
   const activeClass = isActive ? "bg-blue-500 text-white" : ""; // Add active background class

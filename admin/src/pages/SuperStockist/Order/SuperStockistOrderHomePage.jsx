@@ -9,12 +9,13 @@ import { Avatar } from "@material-tailwind/react";
 import Navbar from "../../../Components/Navbar/Navbar";
 import AssignModal from "./AssignModal ";
 import { SuperStockistSideBar } from "../SuperStockistSideBar";
+import { format, parse } from 'date-fns';
 
 const SuperStockistOrderHomePage = () => {
   const [orders, setOrders] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("pending"); // Default active tab
+  const [activeTab, setActiveTab] = useState("processing"); // Default active tab
   const [searchQuery, setSearchQuery] = useState(""); // State for search query
   const [currentPage, setCurrentPage] = useState(1); // Pagination state
   const itemsPerPage = 5; // Number of items per page
@@ -97,7 +98,7 @@ const SuperStockistOrderHomePage = () => {
 
     if (result.isConfirmed) {
       try {
-        await axios.patch(`${BASE_URL}/api/panshop/order/cancel/${orderId}`);
+        await axios.put(`${BASE_URL}/api/panshop/order/cancel/${orderId}`);
         Swal.fire("Canceled!", "Your order has been canceled.", "success");
         fetchData();
       } catch (error) {
@@ -115,6 +116,26 @@ const SuperStockistOrderHomePage = () => {
     localStorage.clear("token");
     navigate("/");
   };
+
+  const isTimeExceeded = (deliveryTime) => {
+    if (!deliveryTime) return false;
+
+    const currentTime = new Date();
+    const deliveryTimeDate = new Date(deliveryTime);
+
+    // Compare if the delivery time exceeds a threshold (e.g., 24 hours from now)
+    const timeDifference = currentTime - deliveryTimeDate;
+
+    // If time difference exceeds 24 hours (86400000 ms), return true
+    return timeDifference > 86400000;
+  };
+
+
+  const handleOnclick = (order) => {
+
+    navigate("/trackerOrder/superstockist", { state: { order } });
+  }
+
   return (
     <div className="flex font-sans bg-blue-100 h-screen">
       {/* Sidebar */}
@@ -141,19 +162,20 @@ const SuperStockistOrderHomePage = () => {
         </div>
         {/* Tab Buttons */}
         <div className="mb-4 grid lg:grid-cols-10 md:grid-cols-6 grid-cols-2 gap-1">
-          {["confirmed", "shipped", "delivered", "canceled"].map((status) => (
-            <Button
-              key={status}
-              className={`mr-2 ${
-                activeTab === status
+          {["processing", "confirmed", "delivered", "canceled"].map(
+            (status) => (
+              <Button
+                key={status}
+                className={`mr-2 ${activeTab === status
                   ? "bg-[#001D3D] text-white shadow-lg"
                   : "bg-[hsl(211,100%,66%)] text-white hover:bg-[#001D3D]"
-              }`}
-              onClick={() => setActiveTab(status)}
-            >
-              {status.charAt(0).toUpperCase() + status.slice(1)}
-            </Button>
-          ))}
+                  }`}
+                onClick={() => setActiveTab(status)}
+              >
+                {status.charAt(0).toUpperCase() + status.slice(1)}
+              </Button>
+            )
+          )}
         </div>
 
         {/* Search Bar */}
@@ -174,14 +196,15 @@ const SuperStockistOrderHomePage = () => {
               <tr className="bg-[#001D3D] text-white">
                 <th className="border px-4 py-2">PanShop Details</th>
                 <th className="border px-4 py-2">Assign to Stockist</th>
-                <th className="border px-4 py-2">Assign to Super Stockist</th>
                 {activeTab !== "processing" && (
-                  <th className="border px-4 py-2">Assigned to DeliveryBoy</th>
+                  <th className="border px-4 py-2">Assigned to SuperStockist DeliveryBoy</th>
                 )}
                 <th className="border px-4 py-2">Products</th>
-                <th className="border px-4 py-2">Total Price</th>
+
                 <th className="border px-4 py-2">Status</th>
-                <th className="border px-4 py-2">Actions</th>
+               
+                  <th className="border px-4 py-2 text-center">Action</th>
+               
               </tr>
             </thead>
             <tbody>
@@ -189,47 +212,108 @@ const SuperStockistOrderHomePage = () => {
                 currentOrders.map((order, index) => (
                   <tr
                     key={order._id}
-                    className={`hover:bg-gray-100 ${
-                      index % 2 === 0 ? "bg-gray-50" : "bg-white"
-                    }`}
+                    className={`hover:bg-gray-100 ${index % 2 === 0 ? "bg-gray-50" : "bg-white"
+                      }`}
                   >
                     <td className="border px-4 py-2 text-center">
                       {order.panShopOwnerName}
                       <br />
                       {order.panShopOwneraddress}
+                      <div className="mt-2 text-sm text-gray-500">
+                        Order Created At: {format(new Date(order?.createdAt), 'MMM d, yyyy h:mm a')}
+                      </div>
                     </td>
-                    <td className="border px-4 py-2">{order.stockistEmail}</td>
-                    <td className="border px-4 py-2">
-                      {order.superStockistEmail}
+                    <td className="border px-4 py-2 text-center">{order.stockistEmail}
+                      <p
+                        className={` ${order.stockistStatus === "pending"
+                          ? "text-yellow-500"
+
+                          : order.stockistStatus === "delivered"
+                            ? "text-purple-500"
+                            : order.stockistStatus === "canceled"
+                              ? "text-red-500"
+                              : ""
+                          }`}
+                      >
+                        {order.stockistStatus}
+                      </p>
                     </td>
 
-                    {activeTab !== "processing" && (
+
+                    {activeTab != "processing" && (
                       <td className="border px-4 py-2 text-center">
-                        {order.deliveryBoyId?.username}
-                        <br />
-                        {order.deliveryBoyId?.email}
+                        {/* Displaying Delivery Boy Username and Email */}
+                        <p className="font-semibold">{order.superStockistdeliveryBoyId?.username}</p>
+                        <p className="text-sm text-gray-500">{order.superStockistdeliveryBoyId?.email}</p>
 
-                        <br />
-                        <Link
-                          to={`/DeliveryboyDetails/${order.deliveryBoyId._id}/superstockist`}
-                          className="text-green-600"
+                        {/* Delivery Status with Color Based on Status */}
+                        <p
+                          className={`${order.StockistStatus === "pending"
+                            ? "text-yellow-500"
+                            : order.StockistStatus === "delivered"
+                              ? "text-purple-500"
+                              : order.StockistStatus === "canceled"
+                                ? "text-red-500"
+                                : ""
+                            }`}
                         >
-                          Show Details
-                        </Link>
+                          {order.superStockistDeliveryBoyOrderStatus}
+                        </p>
+
+                        {/* Display OTP */}
+                        <p className="text-xs text-gray-600">OTP: {order.stockistOtp}</p>
+
+                        {/* Delivery Time with Red Color if Time Exceeded */}
+                        <p
+                          className={`${isTimeExceeded(order.superStockistdeliveryTime) ? "text-red-500" : "text-green-500"
+                            }`}
+                        >
+                          Delivery Time: {new Date(order.superStockistdeliveryTime).toLocaleString()}
+                        </p>
+
+                        {/* Link to Show Delivery Boy Details (Uncomment if Needed) */}
+                        {/* <Link
+                        to={`/DeliveryboyDetails/${order.superStockistdeliveryBoyId?._id}/superstockist`}
+                        className="text-blue-600 hover:text-blue-800 text-sm"
+                      >
+                        Show Delivery Boy Details
+                      </Link> */}
                       </td>
+
                     )}
 
-                    <td className="border px-4 py-2">
-                      <ul className="space-y-1">
+                    <td className="border px-6 py-4">
+                      {/* List of Products with Quantity */}
+                      <ul className="space-y-2">
                         {order.products.map((product, index) => (
-                          <li key={index}>{product.productNames}</li>
+                          <li key={index} className="flex justify-between items-center text-sm text-gray-700">
+                            <span className="font-semibold">{product.productName}</span>
+                            <span className="text-gray-500">Qty: {product.quantity}</span>
+                          </li>
                         ))}
                       </ul>
+
+                      {/* Total Price */}
+                      <p className="mt-4 text-center text-lg font-semibold text-gray-800">
+                        <span className="text-xl">Total Price :</span> ₹{order.totalPrice}
+                      </p>
                     </td>
-                    <td className="border px-4 py-2">Rs.{order.totalPrice} </td>
-                    <td className="border px-4 py-2">{order.status}</td>
-                    <td className="border px-4 py-2">
-                      {activeTab === "confirmed" && (
+
+                    <td className={`border px-4 py-2 ${order.status === "pending"
+                      ? "text-yellow-500"
+                      : order.status === "processing"
+                        ? "text-blue-500"
+                        : order.status === "confirmed"
+                          ? "text-green-500"
+                          : order.status === "delivered"
+                            ? "text-purple-500"
+                            : order.status === "canceled"
+                              ? "text-red-500"
+                              : ""
+                      }`}
+                    >{order.status}</td>
+                    <td className="border px-4 py-2  flex justify-center gap-4 flex-wrap">
+                      {activeTab === "processing" && (
                         <Button
                           color="green"
                           className="mr-2 my-2"
@@ -239,23 +323,25 @@ const SuperStockistOrderHomePage = () => {
                         </Button>
                       )}
 
-                      {activeTab === "shipped" && (
+
+                      {activeTab === "processing" && (
                         <Button
-                          color="green"
-                          className="mr-2 my-2"
-                          onClick={() => openModal(order)}
+                          color="red"
+                          onClick={() => handleCancelOrder(order._id)}
                         >
-                          Re-Assign
+                          Cancel
                         </Button>
                       )}
-
                       <Button
-                        color="red"
-                        onClick={() => handleCancelOrder(order._id)}
+                        className="bg-green-600 text-white shadow hover:bg-green-500"
+                        onClick={() => handleOnclick(order)}
                       >
-                        Cancel
+                        Track Order
                       </Button>
                     </td>
+
+
+
                   </tr>
                 ))
               ) : (
